@@ -4,7 +4,17 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /src
 COPY . /src
 
+RUN apk --update add \
+    curl \
+    gcc \
+    musl-dev \
+    linux-headers \
+    build-base \
+    libffi-dev \
+    bash
+
 # pipを使ってpoetryをインストール
+RUN pip install --upgrade pip
 RUN pip install poetry
 
 # poetryの定義ファイルをコピー (存在する場合)
