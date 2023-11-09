@@ -12,4 +12,4 @@ jobs:
           docker build . --file Dockerfile --tag api
       - name: Run tests
         run: |
-          docker run api pytest
+          docker run api pytest tests
