@@ -14,8 +14,4 @@ jobs:
           poetry install
       - name: run tests
         run: |
-<<<<<<< HEAD
           poetry run pytest
-=======
-          docker run api pytest tests
->>>>>>> d3e04ed6d3f856a7166c47bd4867aba60bd85e40
