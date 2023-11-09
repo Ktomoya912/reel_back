@@ -10,6 +10,11 @@ jobs:
       - name: Build the Docker image
         run: |
           docker build . --file Dockerfile --tag api:$(date +%s)
-      - name: Run tests
-        run: |
-          docker-compose run --entrypoint "poetry run pytest" api:$(date +%s)
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    container: api:$(date +%s)
+    steps:
+        - name: Run tests
+          run: |
+            pytest
