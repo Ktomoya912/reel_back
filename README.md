@@ -17,7 +17,7 @@ Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl
 ## Gitリポジトリのクローン
 UbuntuもしくはMacのターミナル上で以下のコマンドを実行する。
 ```shell
-$ git clone https://github.com/Ktomoya912/g-13-documents.git
+$ git clone https://github.com/Ktomoya912/reel_back.git
 ```
 <details><summary>失敗した場合</summary>
 認証失敗のエラーが出た場合、SSHでクローンを行うようにする。
@@ -72,22 +72,46 @@ Host github
   IdentityFile ~/.ssh/github
   Port 22
   # もし学内で優先接続を行う場合は以下の行を追加する
-  ProxyCommand ssh -q -W %h:%p
+  ProxyCommand nc -X connect -x proxy.noc.kochi-tech.ac.jp:3128 %h %p
 ```
+
+### リポジトリのクローン
+
+```shell
+$ git clone github:Ktomoya912/reel_back.git
+```
+
 </details>
 
 これでリポジトリがクローンされる。
 
+続いてクローンしたリポジトリに移動し、Dockerイメージのビルドを行う。
+
 ```shell
+$ cd reel_back
 $ docker-compose build
 ```
 
+<details><summary>学内の有線の場合</summary>
+Proxyの関係でビルドが失敗する場合がある。その場合は~/.bashrcに以下の内容を追記し、ターミナルを再起動する。
+
+```shell
+export http_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
+export https_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
+```
+これで再度試してほしい。
+</details>
+
+
 # 1. 必要ライブラリのインストール
+このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
 ```shell
 $ docker-compose run --entrypoint "poetry install --no-root" demo-app
 ```
 
 # 2. APIの立ち上げ
+以下のコマンドを実行することでAPIが立ち上がる。
+実際にlocalhost:8000/docsにアクセスするとAPIのドキュメントが表示される。
 ```shell
 $ docker-compose up
 ```
