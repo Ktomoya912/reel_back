@@ -3,18 +3,13 @@ name: Dockerized Python application test
 on: push
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build the Docker image
+      - name: Build the Docker image for testing
         run: |
-          docker build . --file Dockerfile --tag api:$(date +%s)
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    container: api:$(date +%s)
-    steps:
-        - name: Run tests
-          run: |
-            pytest
+          docker build . --file Dockerfile --tag api
+      - name: Run tests
+        run: |
+          docker run api pytest
