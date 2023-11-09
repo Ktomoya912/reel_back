@@ -118,3 +118,5 @@ $ docker-compose up
 # 参考
 ## [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)
 基本はここに書かれているのでここを参照すると作業が捗る。
+## [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/ja/tutorial/)
+ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
