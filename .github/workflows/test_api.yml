@@ -12,4 +12,4 @@ jobs:
           docker build . --file Dockerfile --tag api:$(date +%s)
       - name: Run tests
         run: |
-          docker run api:$(date +%s) poetry run pytest ./tests
+          docker-compose run --entrypoint "poetry run pytest" api:$(date +%s)
