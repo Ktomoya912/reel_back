@@ -1,0 +1,15 @@
+name: Dockerized Python application test
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: |
+          docker build . --file Dockerfile --tag api:$(date +%s)
+      - name: Run tests
+        run: |
+          docker run api:$(date +%s) poetry run pytest ./tests
