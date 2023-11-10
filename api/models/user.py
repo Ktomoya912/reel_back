@@ -5,7 +5,7 @@ from api.db import Base
 
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True)
@@ -43,8 +43,8 @@ class User(Base):
 class JobHistory(Base):
     __tablename__ = "job_history"
 
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    job_id = Column(Integer, ForeignKey("job.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
     count = Column(Integer)
     created_at = Column(DateTime)
 
@@ -55,8 +55,8 @@ class JobHistory(Base):
 class EventHistory(Base):
     __tablename__ = "event_history"
 
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    event_id = Column(Integer, ForeignKey("event.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
     count = Column(Integer)
     created_at = Column(DateTime)
 

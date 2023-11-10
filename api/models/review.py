@@ -16,7 +16,7 @@ from api.db import Base
 
 
 class Review(Base):
-    __tablename__ = "review"
+    __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(50))

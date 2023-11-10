@@ -5,7 +5,7 @@ from api.db import Base
 
 
 class Message(Base):
-    __tablename__ = "message"
+    __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(50))

@@ -10,14 +10,14 @@
 単発か否か
 掲載期間
 企業からの追加メッセージ(optional)"""
-from sqlalchemy import Column, Integer, String, ForeignKey, Datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from api.db import Base
 
 
 class Job(Base):
-    __tablename__ = "job"
+    __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(50))
@@ -25,8 +25,8 @@ class Job(Base):
     company = relationship("Company", back_populates="jobs")
     event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
     event = relationship("Event", back_populates="jobs", uselist=False)
-    created_at = Column(Datetime, default=datetime.now())
-    updated_at = Column(Datetime)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime)
     salary = Column(String(50))
     tags = relationship("Tag", secondary="job_tag", back_populates="jobs")
     bookmark_users = relationship(
@@ -51,9 +51,9 @@ class Job(Base):
 class JobApplication(Base):
     __tablename__ = "job_application"
 
-    job_id = Column(Integer, ForeignKey("job.id"), primary_key=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    created_at = Column(Datetime)
+    created_at = Column(DateTime)
     status = Column(String(50))  # 応募の状態
 
     job = relationship("Job")

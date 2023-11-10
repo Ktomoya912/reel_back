@@ -25,7 +25,7 @@ from api.db import Base
 
 
 class Event(Base):
-    __tablename__ = "event"
+    __tablename__ = "events"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, index=True)

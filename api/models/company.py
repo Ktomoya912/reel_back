@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 
 from api.db import Base
 
 
 class Company(Base):
-    __tablename__ = "company"
+    __tablename__ = "companies"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, index=True)
@@ -16,7 +16,7 @@ class Company(Base):
     phone_number = Column(String(20))
     email = Column(String(50))
     homepage = Column(String(50))
-    representative = Column(String(50))
+    representative = Column(String(50))  # 代表者
     created_at = Column(DateTime)
     users = relationship("User", back_populates="company")
     jobs = relationship("Job", back_populates="company")
