@@ -1,10 +1,11 @@
 from typing import Optional
 from pydantic import BaseModel, Field
 from .company import Company
+from datetime import datetime
 
 
 class UserBase(BaseModel):
-    name: str
+    username: str
     password: str
     email: str
     gender: Optional[str] = Field(
@@ -13,16 +14,17 @@ class UserBase(BaseModel):
         description="性别",
         max_length=2,
     )
-    birthday: Optional[str] = Field(
-        "",
-        example="1990-01-01",
-        description="誕生日",
+    birthday: datetime
+    user_type: str = Field(
+        "default",
+        example="user",
+        description="ユーザータイプ",
     )
-    company: Optional[Company]
 
 
 class User(UserBase):
     id: int
+    company: Optional[Company] = None
 
     class Config:
         orm_mode = True
