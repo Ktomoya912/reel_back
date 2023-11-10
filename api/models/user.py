@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-
+from datetime import datetime
 from api.db import Base
 
 
@@ -13,11 +13,9 @@ class User(Base):
     password = Column(String(255))
     gender = Column(String(10))
     birthday = Column(DateTime)
-    created_at = Column(DateTime)
-    deleted_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now())
+    deleted_at = Column(DateTime, nullable=True)
     user_type = Column(String(10))
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
-    company = relationship("Company", back_populates="users")
     event_bookmarks = relationship(
         "Event", secondary="event_bookmark", back_populates="bookmark_users"
     )
@@ -33,7 +31,10 @@ class User(Base):
     watch_events = relationship(
         "Event", secondary="event_history", back_populates="watch_users"
     )
+    reviews = relationship("Review", back_populates="user")
     messages = relationship("Message", back_populates="user")
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
+    company = relationship("Company", back_populates="users", uselist=False)
 
     def __repr__(self):
         return f"<User({self.id}, {self.username})>"

@@ -1,4 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+import api.cruds.user as user_crud
+from api.db import get_db
+
 from typing import List
 
 import api.schemas.user as user_schema
@@ -21,8 +26,10 @@ def get_users():
 
 
 @router.post("/users", response_model=user_schema.UserCreateResponse)
-def create_user(user_id: int, user_body: user_schema.UserCreate):
-    return user_schema.UserCreateResponse(id=user_id, **user_body.dict())
+async def create_user(
+    user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
+):
+    return await user_crud.create_user(db, user_body)
 
 
 @router.put("/users/{user_id}", response_model=user_schema.UserCreateResponse)
