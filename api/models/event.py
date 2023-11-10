@@ -39,13 +39,21 @@ class Event(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     period = Column(String(50))
+    reviews = relationship("Review", back_populates="event")
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     company = relationship("Company", back_populates="events")
+    bookmark_users = relationship(
+        "User", secondary="event_bookmark", back_populates="event_bookmarks"
+    )
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
     job = relationship("Job", back_populates="events", uselist=False)
+    tags = relationship("Tag", secondary="event_tag", back_populates="events")
     event_description = Column(String(1000))
     event_date = Column(DateTime)
-    participation_fee = Column(String(50))
-    capacity = Column(String(50))
+    participation_fee = Column(String(50))  # 参加費
+    capacity = Column(String(50))  # 定員
     caution = Column(String(1000))
     additional_message = Column(String(1000))
+    watch_users = relationship(
+        "User", secondary="event_history", back_populates="watch_events"
+    )

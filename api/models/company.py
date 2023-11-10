@@ -1,16 +1,3 @@
-"""法人 ID(primary)
-法人名
-郵便番号
-都道府県
-市区町村
-番地・建物名
-法人の電話番号
-法人のメールアドレス
-法人のホームページ (optional)
-代表者名
-作成日時
-ユーザー ID(foreign)
-"""
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 
@@ -33,3 +20,4 @@ class Company(Base):
     created_at = Column(DateTime)
     users = relationship("User", back_populates="company")
     jobs = relationship("Job", back_populates="company")
+    events = relationship("Event", back_populates="company")

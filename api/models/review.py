@@ -19,6 +19,7 @@ class Review(Base):
     __tablename__ = "review"
 
     id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(50))
     review_description = Column(String(1000))
     review_score = Column(Integer)
     created_at = Column(DateTime)
