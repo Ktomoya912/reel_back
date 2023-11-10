@@ -17,7 +17,7 @@ class User(Base):
     deleted_at = Column(DateTime)
     user_type = Column(String(10))
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
-    company = relationship("Company", back_populates="users")
+    company = relationship("Company", back_populates="users", uselist=False)
     event_bookmarks = relationship(
         "Event", secondary="event_bookmark", back_populates="bookmark_users"
     )
