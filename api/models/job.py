@@ -1,15 +1,3 @@
-"""求人 ID(primary)
-法人 ID(foreign)
-イベント ID(foreign,optional)
-作成日時
-更新日時
-給料
-勤務時間
-勤務場所
-仕事内容
-単発か否か
-掲載期間
-企業からの追加メッセージ(optional)"""
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -23,8 +11,7 @@ class Job(Base):
     title = Column(String(50))
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     company = relationship("Company", back_populates="jobs")
-    event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
-    event = relationship("Event", back_populates="jobs", uselist=False)
+    event = relationship("Event", back_populates="job")
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime)
     salary = Column(String(50))
@@ -40,7 +27,7 @@ class Job(Base):
     period = Column(String(50))
     additional_message = Column(String(1000))
     applicants = relationship(
-        "User", secondary="job_application", back_populates="jobs"
+        "User", secondary="job_application", back_populates="applications"
     )
     watch_users = relationship(
         "User", secondary="job_history", back_populates="watch_jobs"
