@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, Field
+from .company import Company
 
 
 class UserBase(BaseModel):
@@ -17,6 +18,7 @@ class UserBase(BaseModel):
         example="1990-01-01",
         description="誕生日",
     )
+    company: Optional[Company]
 
 
 class User(UserBase):
