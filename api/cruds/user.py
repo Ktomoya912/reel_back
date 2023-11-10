@@ -10,5 +10,5 @@ async def create_user(
     user = user_model.User(**user_create.dict())
     db.add(user)
     await db.commit()
-    await db.reflesh(user)
+    await db.refresh(user)
     return user
