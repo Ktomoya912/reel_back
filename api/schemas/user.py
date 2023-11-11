@@ -24,10 +24,44 @@ class UserBase(BaseModel):
 
 class User(UserBase):
     id: int
-    company: Optional[Company] = None
+    company: Optional[Company] = Field(
+        None,
+        example={},
+        description="会社情報",
+    )
+    event_bookmarks: Optional[list] = Field(
+        [],
+        example=[],
+        description="お気に入り(イベント)",
+    )
+    job_bookmarks: Optional[list] = Field(
+        [],
+        example=[],
+        description="お気に入り(求人)",
+    )
+    applications: Optional[list] = Field(
+        [],
+        example=[],
+        description="応募履歴(求人)",
+    )
+    watch_jobs: Optional[list] = Field(
+        [],
+        example=[],
+        description="閲覧履歴(求人)",
+    )
+    reviews: Optional[list] = Field(
+        [],
+        example=[],
+        description="レビュー",
+    )
+    messages: Optional[list] = Field(
+        [],
+        example=[],
+        description="メッセージ",
+    )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserCreate(UserBase):
@@ -38,4 +72,4 @@ class UserCreateResponse(UserCreate):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
