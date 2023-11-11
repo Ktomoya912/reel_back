@@ -1,28 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import api.cruds.user as user_crud
 from api.db import get_db
 
-from typing import List
-
 import api.schemas.user as user_schema
 
 router = APIRouter()
-
-
-@router.get("/users", response_model=List[user_schema.User])
-def get_users():
-    return [
-        user_schema.User(
-            id=1,
-            name="user1",
-            password="password1",
-            email="example@email.com",
-            gender="男",
-            birthday="1990-01-01",
-        )
-    ]
 
 
 @router.post("/users", response_model=user_schema.UserCreateResponse)
@@ -32,11 +16,29 @@ async def create_user(
     return await user_crud.create_user(db, user_body)
 
 
+@router.get("/users", response_model=list[user_schema.User])
+async def get_users(db: AsyncSession = Depends(get_db)):
+    return await user_crud.get_users(db)
+
+
+@router.get("/users/{user_id}", response_model=user_schema.User)
+async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    return await user_crud.get_user(db, user_id)
+
+
 @router.put("/users/{user_id}", response_model=user_schema.UserCreateResponse)
-def update_user(user_body: user_schema.UserCreate):
-    return user_schema.UserCreateResponse(id=1, **user_body.dict())
+async def update_user(
+    user_id: int, user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
+):
+    user = await user_crud.get_user_model(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await user_crud.update_user(db, user_body, original=user)
 
 
-@router.delete("/users/{user_id}")
-def delete_user():
-    pass
+@router.delete("/users/{user_id}", response_model=None)
+async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await user_crud.get_user_model(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await user_crud.delete_user(db, user)
