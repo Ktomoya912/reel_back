@@ -4,12 +4,16 @@ import api.models.user as user_model
 import api.schemas.user as user_schema
 from sqlalchemy.engine import Result
 from typing import Optional
+from hashlib import sha256
 
 
 async def create_user(
     db: AsyncSession, user_create: user_schema.UserCreate
 ) -> user_model.User:
-    user = user_model.User(**user_create.dict())
+    tmp = user_create.dict()
+    hashed_password = sha256(user_create.dict().get("password").encode()).hexdigest()
+    tmp["password"] = hashed_password
+    user = user_model.User(**tmp)
     db.add(user)
     await db.commit()
     await db.refresh(user)
