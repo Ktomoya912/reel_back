@@ -61,7 +61,7 @@ class User(UserBase):
     )
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class UserCreate(UserBase):
@@ -72,4 +72,4 @@ class UserCreateResponse(UserCreate):
     id: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
