@@ -1,7 +1,11 @@
-from typing import Optional
-from pydantic import BaseModel, Field
-from .company import Company
+from typing import Optional, TYPE_CHECKING
+from pydantic import BaseModel, Field, field_serializer
 from datetime import datetime
+from hashlib import sha256
+
+from .company import Company
+
+# if TYPE_CHECKING:
 
 
 class UserBase(BaseModel):
@@ -21,10 +25,14 @@ class UserBase(BaseModel):
         description="ユーザータイプ",
     )
 
+    @field_serializer("password")
+    def password_hash(self, v):
+        return sha256(v.encode(encoding="utf-8")).hexdigest()
+
 
 class User(UserBase):
     id: int
-    company: Optional[Company] = Field(
+    company: Optional["Company"] = Field(
         None,
         example={},
         description="会社情報",

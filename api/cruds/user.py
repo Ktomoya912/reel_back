@@ -10,9 +10,7 @@ from hashlib import sha256
 async def create_user(
     db: AsyncSession, user_create: user_schema.UserCreate
 ) -> user_model.User:
-    tmp = user_create.dict()
-    hashed_password = sha256(user_create.dict().get("password").encode()).hexdigest()
-    tmp["password"] = hashed_password
+    tmp = user_create.model_dump()
     user = user_model.User(**tmp)
     db.add(user)
     await db.commit()
