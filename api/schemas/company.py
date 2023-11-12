@@ -1,5 +1,8 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from .user import User
 
 
 class CompanyBase(BaseModel):
@@ -20,6 +23,11 @@ class CompanyBase(BaseModel):
 
 class Company(CompanyBase):
     id: int
+    users: Optional[list["User"]] = Field(
+        [],
+        example=[],
+        description="ユーザー情報",
+    )
 
     class Config:
         orm_mode = True
