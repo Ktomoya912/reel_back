@@ -16,9 +16,16 @@ class Event(Base):
     phone_number = Column(String(20))
     email = Column(String(50))
     homepage = Column(String(50))
+    participation_fee = Column(String(50))  # 参加費
+    capacity = Column(String(50))  # 定員
+    caution = Column(String(1000))
+    additional_message = Column(String(1000))
+    period = Column(String(50))
+    event_description = Column(String(1000))
+
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-    period = Column(String(50))
+
     reviews = relationship("Review", back_populates="event")
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     company = relationship("Company", back_populates="events")
@@ -28,12 +35,7 @@ class Event(Base):
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True, unique=True)
     job = relationship("Job", back_populates="event", uselist=False)
     tags = relationship("Tag", secondary="event_tag", back_populates="events")
-    event_description = Column(String(1000))
     event_date = Column(DateTime)
-    participation_fee = Column(String(50))  # 参加費
-    capacity = Column(String(50))  # 定員
-    caution = Column(String(1000))
-    additional_message = Column(String(1000))
     watch_users = relationship(
         "User", secondary="event_history", back_populates="watch_events"
     )
