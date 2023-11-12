@@ -115,8 +115,16 @@ $ docker-compose run --entrypoint "poetry install --no-root" demo-app
 ```shell
 $ docker-compose up
 ```
+
+# 3. APIのテスト
+以下のコマンドを実行することでテストが実行される。
+```shell
+$ docker-compose run --entrypoint "poetry run pytest" demo-app
+```
+
 # 参考
 ## [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)
 基本はここに書かれているのでここを参照すると作業が捗る。
 ## [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/ja/tutorial/)
 ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
+## [SQLAlchemyとFastAPIのリレーション](https://qiita.com/shimi7o/items/c009014b864c4412884a)
