@@ -8,7 +8,7 @@ class Tag(Base):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, index=True)
-    tag_name = Column(String(50), unique=True, index=True)
+    name = Column(String(50), unique=True, index=True)
     jobs = relationship("Job", secondary="job_tag", back_populates="tags")
     events = relationship("Event", secondary="event_tag", back_populates="tags")
 
