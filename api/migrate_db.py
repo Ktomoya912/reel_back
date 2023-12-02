@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 
-from api.models import bookmark, company, event, job, message, review, tag, user
+from api.models import company, event, job, message, tag, user, plan  # noqa F401
 from api.db import Base
 
 DB_URL = "mysql+pymysql://root@db:3306/demo?charset=utf8"

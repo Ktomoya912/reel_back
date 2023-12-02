@@ -1,1 +1,1 @@
-from api.models import bookmark, company, event, job, message, review, tag, user
+from api.models import company, event, job, message, plan, tag, user  # noqa F401

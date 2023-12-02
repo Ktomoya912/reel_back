@@ -1,72 +1,72 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from pydantic import BaseModel, Field, field_serializer
-from datetime import datetime
+
+# from datetime import datetime
 from hashlib import sha256
+import datetime
 
-from .company import Company
+# from .company import Company
 
-# if TYPE_CHECKING:
+
+class CompanyBase(BaseModel):
+    name: str
+    postal_code: str
+    prefecture: str
+    city: str
+    address: str
+    phone_number: str
+    email: str
+    homepage: Optional[str] = Field(
+        "",
+        example="https://example.com",
+        description="ホームページ",
+    )
+    representative: str  # 代表者
+
+
+class Company(CompanyBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CompanyCreate(CompanyBase):
+    pass
+
+
+class CompanyCreateResponse(CompanyCreate):
+    id: int
+
+    class Config:
+        orm_mode = True
 
 
 class UserBase(BaseModel):
     username: str
     password: str
     email: str
-    gender: Optional[str] = Field(
-        "",
+    sex: Optional[str] = Field(
+        "o",
         example="男",
         description="性别",
         max_length=2,
     )
-    birthday: datetime
+    birthday: datetime.date
     user_type: str = Field(
-        "default",
-        example="user",
+        "u",
+        example="u",
         description="ユーザータイプ",
     )
 
     @field_serializer("password")
-    def password_hash(self, v):
+    def password_hash(self, v: str):
         return sha256(v.encode(encoding="utf-8")).hexdigest()
 
 
 class User(UserBase):
     id: int
-    company: Optional["Company"] = Field(
-        None,
-        example={},
-        description="会社情報",
-    )
-    event_bookmarks: Optional[list] = Field(
-        [],
-        example=[],
-        description="お気に入り(イベント)",
-    )
-    job_bookmarks: Optional[list] = Field(
-        [],
-        example=[],
-        description="お気に入り(求人)",
-    )
-    applications: Optional[list] = Field(
-        [],
-        example=[],
-        description="応募履歴(求人)",
-    )
-    watch_jobs: Optional[list] = Field(
-        [],
-        example=[],
-        description="閲覧履歴(求人)",
-    )
-    reviews: Optional[list] = Field(
-        [],
-        example=[],
-        description="レビュー",
-    )
-    messages: Optional[list] = Field(
-        [],
-        example=[],
-        description="メッセージ",
-    )
+    company: Optional["Company"]
 
     class Config:
         orm_mode = True
@@ -74,6 +74,16 @@ class User(UserBase):
 
 class UserCreate(UserBase):
     pass
+
+
+# 法人ユーザー登録用
+class UserCreateCompany(UserCreate):
+    user_type: str = Field(
+        "c",
+        example="c",
+        description="ユーザータイプ",
+    )
+    company: CompanyCreate
 
 
 class UserCreateResponse(UserCreate):

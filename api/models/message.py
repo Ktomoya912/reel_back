@@ -1,18 +1,24 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 
-from api.db import Base
+from api.db import BaseModel
 
 
-class Message(Base):
-    __tablename__ = "messages"
+class MessageBox(BaseModel):
+    __tablename__ = "message_box"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(50))
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    message_id = Column(Integer, ForeignKey("messages.id"))
+    is_read = Column(Boolean, default=False)
+
     user = relationship("User", back_populates="messages")
-    message = Column(String(1000))
-    created_at = Column(DateTime)
+    message = relationship("Message", back_populates="users")
 
-    def __repr__(self):
-        return f"<Message({self.id}, {self.message})>"
+
+class Message(BaseModel):
+    id = Column(Integer, primary_key=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text)
+
+    users = relationship("MessageBox", back_populates="message")

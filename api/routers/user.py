@@ -16,6 +16,13 @@ async def create_user(
     return await user_crud.create_user(db, user_body)
 
 
+@router.post("/users/company", response_model=user_schema.UserCreateResponse)
+async def create_user_company(
+    user_body: user_schema.UserCreateCompany, db: AsyncSession = Depends(get_db)
+):
+    return await user_crud.create_user_company(db, user_body)
+
+
 @router.get("/users", response_model=list[user_schema.User])
 async def get_users(db: AsyncSession = Depends(get_db)):
     return await user_crud.get_users(db)

@@ -1,23 +1,19 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, ForeignKey
 
-from api.db import Base
+from api.db import BaseModel
 
 
-class Company(Base):
+class Company(BaseModel):
     __tablename__ = "companies"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), unique=True, index=True)
-    postal_code = Column(String(10))
-    prefecture = Column(String(10))
-    city = Column(String(50))
-    address = Column(String(50))
-    phone_number = Column(String(20))
-    email = Column(String(50))
-    homepage = Column(String(50))
-    representative = Column(String(50))  # 代表者
-    created_at = Column(DateTime)
-    users = relationship("User", back_populates="company")
-    jobs = relationship("Job", back_populates="company")
-    events = relationship("Event", back_populates="company")
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    postal_code = Column(String(8), nullable=False)
+    prefecture = Column(String(10), nullable=False)
+    city = Column(String(255), nullable=False)
+    address = Column(String(255), nullable=False)
+    phone_number = Column(String(20), nullable=False)
+    email = Column(String(255), nullable=False)
+    homepage = Column(String(255), nullable=False)
+    representative = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))

@@ -1,7 +1,19 @@
+import os
+from datetime import datetime
+import re
+
+from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-ASYNC_DB_URL = "mysql+aiomysql://root@db:3306/demo?charset=utf8"
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "db")
+DB_PORT = os.getenv("DB_PORT", "3306")
+ASYNC_DB_URL = (
+    f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/demo?charset=utf8"
+)
 
 async_engine = create_async_engine(ASYNC_DB_URL, echo=True)
 async_session = sessionmaker(
@@ -9,6 +21,31 @@ async_session = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+class BaseModel(Base):
+    __abstract__ = True
+
+    @declared_attr
+    def __tablename__(cls):
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower() + "s"
+
+    id = Column(Integer, primary_key=True)
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}(id={self.id})>"
+
+    # @declared_attr
+    def __str__(self):
+        return (
+            getattr(self, "name", None) or getattr(self, "title", None) or str(self.id)
+        )
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 async def get_db():
