@@ -394,6 +394,7 @@ REEL Projectで使用するAPIの仕様書です。
 `DELETE /favorites/jobs/{id}`
 #### パラメータ
 | パラメータ名 | 必須 | 型 | 説明 |
+| --- | --- | --- | --- |
 | id | ○ | string | 求人ID |
 | token | ○ | string | アクセストークン |
 #### レスポンス
