@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 
-class WorkingTime(BaseModel):
+class JobTime(BaseModel):
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey("jobs.id"))
     start_time = Column(DateTime)
@@ -61,7 +61,7 @@ class Job(BaseModel):
     status = Column(String(2))
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    working_times = relationship("WorkingTime", backref="job")
+    job_times = relationship("JobTime", backref="job")
     tags = relationship("Tag", secondary="job_tags", back_populates="jobs")
     reviews = relationship("JobReview", backref="job")
     bookmark_users = relationship(
