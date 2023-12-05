@@ -1,5 +1,26 @@
-# 準備
-## Dockerのインストール
+# REEL Project Backend
+## 目次
+- [APIの仕様書](document.md)
+- [概要](#概要)
+- [環境構築](#環境構築)
+  - [Dockerのインストール](#dockerのインストール)
+  - [Gitリポジトリのクローン](#gitリポジトリのクローン)
+  - [SSHの鍵の作成](#sshの鍵の作成)
+    - [GitHubに公開鍵を登録](#githubに公開鍵を登録)
+    - [configファイルの作成](#configファイルの作成)
+    - [リポジトリのクローン](#リポジトリのクローン)
+  - [必要ライブラリのインストール](#必要ライブラリのインストール)
+- [コンテナの起動と操作](#コンテナの起動と操作)
+  - [実行](#実行)
+  - [データベースのマイグレーション](#データベースのマイグレーション)
+  - [MySQLの操作](#mysqlの操作)
+  - [APIのテスト](#apiのテスト)
+- [参考](#参考)
+## 概要
+REELプロジェクトのバックエンドのリポジトリ。
+
+## 環境構築
+### Dockerのインストール
 初めに[Docker Desktop](https://www.docker.com/products/docker-desktop/)のインストールを行う。  
 Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl/install)のインストールが必要になる。
 <details><summary>WSL2のインストール</summary>
@@ -14,7 +35,7 @@ Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl
 以上でWSL2のインストールは完了する。
 </details>
 
-## Gitリポジトリのクローン
+### Gitリポジトリのクローン
 UbuntuもしくはMacのターミナル上で以下のコマンドを実行する。
 ```shell
 $ git clone https://github.com/Ktomoya912/reel_back.git
@@ -39,7 +60,7 @@ Enter same passphrase again: そのままEnter
 
 以上で鍵の作成が終了する。
 続いて作成した鍵をGitHubに登録する。
-### GitHubに公開鍵を登録
+#### GitHubに公開鍵を登録
 windowsのwsl2上で行っている場合は以下のコマンドを実行する。
 
 ```shell
@@ -58,7 +79,7 @@ $ cat github.pub | pbcopy
 titleは任意の名前を入力する。keyにはクリップボードにコピーした公開鍵を貼り付ける。
 これでGitHubに公開鍵が登録される。
 
-### configファイルの作成
+#### configファイルの作成
 configファイルを作成することで、GitHubにSSHでアクセスする際に公開鍵を使用するようにする。
 
 ```shell
@@ -75,7 +96,7 @@ Host github
   ProxyCommand nc -X connect -x proxy.noc.kochi-tech.ac.jp:3128 %h %p
 ```
 
-### リポジトリのクローン
+#### リポジトリのクローン
 
 ```shell
 $ git clone github:Ktomoya912/reel_back.git
@@ -102,29 +123,42 @@ export https_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
 これで再度試してほしい。
 </details>
 
-
-# 1. 必要ライブラリのインストール
+### 必要ライブラリのインストール
 このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
 ```shell
 $ docker-compose run --entrypoint "poetry install --no-root" demo-app
 ```
 
-# 2. APIの立ち上げ
+## コンテナの起動と操作
+### 実行
 以下のコマンドを実行することでAPIが立ち上がる。
 実際にlocalhost:8000/docsにアクセスするとAPIのドキュメントが表示される。
 ```shell
 $ docker-compose up
 ```
 
-# 3. APIのテスト
+### データベースのマイグレーション
+コンテナが立ち上がった状態で以下のコマンドを実行することでデータベースのマイグレーションが行われる。
+```shell
+$ docker-compose exec demo-app poetry run python -m api.migrate_db
+```
+
+### MySQLの操作
+以下のコマンドを実行することでMySQLのコンテナに入ることができる。
+```shell
+$ docker-compose exec db bash -c "mysql"
+```
+
+### APIのテスト
 以下のコマンドを実行することでテストが実行される。
 ```shell
 $ docker-compose run --entrypoint "poetry run pytest" demo-app
 ```
 
-# 参考
-## [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)
-基本はここに書かれているのでここを参照すると作業が捗る。
-## [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/ja/tutorial/)
-ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
-## [SQLAlchemyとFastAPIのリレーション](https://qiita.com/shimi7o/items/c009014b864c4412884a)
+## 参考
+- [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)  
+    基本はここに書かれているのでここを参照すると作業が捗る。
+- [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/ja/tutorial/)  
+    ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
+- [SQLAlchemyとFastAPIのリレーション](https://qiita.com/shimi7o/items/c009014b864c4412884a)  
+    SQLAlchemyでのリレーションの書き方がわからない場合はここを参照すると良い。
