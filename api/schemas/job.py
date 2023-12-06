@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, Field
-from .company import Company
+from .user import Company
 
 
 class JobBase(BaseModel):
@@ -45,7 +45,6 @@ class JobBase(BaseModel):
 class Job(JobBase):
     id: int
     company: Optional[Company] = None
-    event: Optional["Event"] = None
     tags: Optional[list] = Field(
         [],
         example=[],

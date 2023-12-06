@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import api.cruds.user as user_crud
-from api.db import get_db
-
+import api.routers.auth as auth_router
 import api.schemas.user as user_schema
+from api.db import get_db
 
 router = APIRouter()
 
@@ -26,6 +26,13 @@ async def create_user_company(
 @router.get("/users", response_model=list[user_schema.User])
 async def get_users(db: AsyncSession = Depends(get_db)):
     return await user_crud.get_users(db)
+
+
+@router.get("/users/me", response_model=user_schema.User)
+async def get_user_me(
+    current_user: user_schema.User = Depends(auth_router.get_current_user),
+):
+    return current_user
 
 
 @router.get("/users/{user_id}", response_model=user_schema.User)

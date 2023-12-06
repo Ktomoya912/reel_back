@@ -1,11 +1,10 @@
-from typing import Optional
+import datetime
+from typing import Optional, Union
+
+from passlib.context import CryptContext
 from pydantic import BaseModel, Field, field_serializer
 
-# from datetime import datetime
-from hashlib import sha256
-import datetime
-
-# from .company import Company
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class CompanyBase(BaseModel):
@@ -42,6 +41,15 @@ class CompanyCreateResponse(CompanyCreate):
         orm_mode = True
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
+
+
 class UserBase(BaseModel):
     username: str
     password: str
@@ -61,12 +69,13 @@ class UserBase(BaseModel):
 
     @field_serializer("password")
     def password_hash(self, v: str):
-        return sha256(v.encode(encoding="utf-8")).hexdigest()
+        return pwd_context.hash(v)
 
 
 class User(UserBase):
     id: int
     company: Optional["Company"]
+    is_active: bool
 
     class Config:
         orm_mode = True

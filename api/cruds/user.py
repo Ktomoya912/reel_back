@@ -1,13 +1,43 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-import api.models.user as user_model
-import api.models.company as company_model
-import api.schemas.user as user_schema
-from sqlalchemy.engine import Result
+from datetime import datetime, timedelta
 from typing import Optional
 
-# from hashlib import sha256
+from jose import jwt
+from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.engine import Result
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+import os
+import api.models.company as company_model
+import api.models.user as user_model
+import api.schemas.user as user_schema
+
+ALGORITHM = "HS256"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+async def authenticate_user(db: AsyncSession, username: str, password: str):
+    user = await get_user_by_username(db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.password):
+        return False
+    return user
+
+
+async def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now() + expires_delta
+    else:
+        expire = datetime.now() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=ALGORITHM)
+    return encoded_jwt
 
 
 async def create_company(
@@ -49,6 +79,18 @@ async def get_users(db: AsyncSession) -> list[user_model.User]:
     sql = select(user_model.User).options(selectinload(user_model.User.company))
     result: Result = await db.execute(sql)
     return result.scalars()
+
+
+async def get_user_by_username(
+    db: AsyncSession, username: str
+) -> Optional[user_model.User]:
+    sql = (
+        select(user_model.User)
+        .options(selectinload(user_model.User.company))
+        .filter(user_model.User.username == username)
+    )
+    result: Result = await db.execute(sql)
+    return result.scalar_one_or_none()
 
 
 async def get_user(db: AsyncSession, user_id: int) -> Optional[user_model.User]:
