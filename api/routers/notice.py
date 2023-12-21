@@ -17,7 +17,7 @@ async def get_notifications(
 ):
     job_messages = await message_crud.get_messages(db, current_user.id, "J")
     event_messages = await message_crud.get_messages(db, current_user.id, "E")
-    return {
-        "job_messages": job_messages,
-        "event_messages": event_messages,
-    }
+    return [
+        event_messages,
+        job_messages,
+    ]
