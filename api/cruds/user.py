@@ -73,28 +73,6 @@ async def create_access_token(
     return encoded_jwt
 
 
-async def generate_verification_token(
-    username: str, expires_delta: Optional[timedelta] = None
-) -> str:
-    """認証トークンの生成
-
-    Args:
-        username (str): ユーザー名
-        expires_delta (Optional[timedelta], optional): 有効期限. Defaults to None.
-
-    Returns:
-        str: 認証トークン
-    """
-    to_encode = {"sub": username}
-    if expires_delta:
-        expire = datetime.now() + expires_delta
-    else:
-        expire = datetime.now() + timedelta(minutes=30)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=ALGORITHM)
-    return encoded_jwt
-
-
 async def create_company(
     db: AsyncSession, company_create: user_schema.CompanyCreate
 ) -> company_model.Company:
@@ -179,6 +157,25 @@ async def get_user_by_username(
         select(user_model.User)
         .options(selectinload(user_model.User.company))
         .filter(user_model.User.username == username)
+    )
+    result: Result = await db.execute(sql)
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[user_model.User]:
+    """メールアドレスからユーザー情報を取得
+
+    Args:
+        db (AsyncSession): DBセッション
+        email (str): メールアドレス
+
+    Returns:
+        Optional[user_model.User]: ユーザー情報
+    """
+    sql = (
+        select(user_model.User)
+        .options(selectinload(user_model.User.company))
+        .filter(user_model.User.email == email)
     )
     result: Result = await db.execute(sql)
     return result.scalar_one_or_none()

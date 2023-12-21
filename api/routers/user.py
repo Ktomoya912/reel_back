@@ -13,14 +13,18 @@ router = APIRouter()
 async def create_user(
     user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
 ):
-    return await user_crud.create_user(db, user_body)
+    user = await user_crud.create_user(db, user_body)
+    await auth_router.send_verification_email(user.email, db)
+    return user
 
 
 @router.post("/users/company", response_model=user_schema.UserCreateResponse)
 async def create_user_company(
     user_body: user_schema.UserCreateCompany, db: AsyncSession = Depends(get_db)
 ):
-    return await user_crud.create_user_company(db, user_body)
+    user = await user_crud.create_user_company(db, user_body)
+    await auth_router.send_verification_email(user.email, db)
+    return user
 
 
 @router.get("/users", response_model=list[user_schema.User])
