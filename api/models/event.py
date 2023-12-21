@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from api.db import BaseModel
@@ -52,7 +52,7 @@ class Event(BaseModel):
     phone_number = Column(String(20))
     email = Column(String(255))
     homepage = Column(String(255))
-    event_description = Column(Text)
+    description = Column(Text)
     particication_fee = Column(String(255))
     capacity = Column(Integer)
     period = Column(DateTime)

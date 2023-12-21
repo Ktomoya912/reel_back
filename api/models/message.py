@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from api.db import BaseModel
@@ -18,6 +18,7 @@ class MessageBox(BaseModel):
 
 class Message(BaseModel):
     id = Column(Integer, primary_key=True)
+    type = Column(String(1), nullable=False)
     title = Column(String(255), nullable=False)
     message = Column(Text)
 

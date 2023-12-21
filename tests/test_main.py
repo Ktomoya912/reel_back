@@ -1,11 +1,11 @@
 import pytest
-from fastapi.testclient import TestClient
+import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
 from api.db import Base, get_db
 from api.main import app
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-import pytest_asyncio
 
 ASYNC_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -39,7 +39,7 @@ async def test_get_hello(async_client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_and_read(async_client):
+async def test_create_and_read(async_client: AsyncClient) -> None:
     respose = await async_client.post(
         "/users",
         json={

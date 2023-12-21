@@ -1,5 +1,7 @@
 from typing import Optional
+
 from pydantic import BaseModel, Field
+
 from .user import Company
 
 
@@ -20,7 +22,7 @@ class JobBase(BaseModel):
         example="東京都",
         description="勤務地",
     )
-    job_description: str = Field(
+    description: str = Field(
         ...,
         example="◯◯の開発をお願いします。",
         description="仕事内容",

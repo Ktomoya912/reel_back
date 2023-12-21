@@ -1,14 +1,7 @@
-from api.db import BaseModel
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    ForeignKey,
-    Boolean,
-    Text,
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
+from api.db import BaseModel
 
 
 class JobTime(BaseModel):
@@ -54,7 +47,7 @@ class Job(BaseModel):
     name = Column(String(255))
     salary = Column(String(255))
     working_location = Column(String(255))
-    job_description = Column(Text)
+    description = Column(Text)
     is_one_day = Column(Boolean, default=False)
     period = Column(DateTime)
     additional_message = Column(Text)

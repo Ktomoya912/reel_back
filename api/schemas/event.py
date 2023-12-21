@@ -1,4 +1,5 @@
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -20,7 +21,11 @@ class EventBase(BaseModel):
     capacity: str  # 定員
     caution: str
     additional_message: str
-    event_description: str
+    description: str
+
+
+class EventCreate(EventBase):
+    pass
 
 
 class Event(EventBase):
