@@ -16,19 +16,25 @@ router = APIRouter()
 
 @router.post("/users", response_model=user_schema.UserCreateResponse)
 async def create_user(
-    user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
+    user_body: user_schema.UserCreate,
+    db: AsyncSession = Depends(get_db),
+    mail_auth: bool = True,
 ):
     user = await user_crud.create_user(db, user_body)
-    await auth_router.send_verification_email(user.email, db)
+    if mail_auth:
+        await auth_router.send_verification_email(user.email, db)
     return user
 
 
 @router.post("/users/company", response_model=user_schema.UserCreateResponse)
 async def create_user_company(
-    user_body: user_schema.UserCreateCompany, db: AsyncSession = Depends(get_db)
+    user_body: user_schema.UserCreateCompany,
+    db: AsyncSession = Depends(get_db),
+    mail_auth: bool = True,
 ):
     user = await user_crud.create_user_company(db, user_body)
-    await auth_router.send_verification_email(user.email, db)
+    if mail_auth:
+        await auth_router.send_verification_email(user.email, db)
     return user
 
 
@@ -53,7 +59,7 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
 async def update_user(
     user_id: int, user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
 ):
-    user = await user_crud.get_user_model(db, user_id)
+    user = await user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return await user_crud.update_user(db, user_body, original=user)
@@ -61,7 +67,7 @@ async def update_user(
 
 @router.delete("/users/{user_id}", response_model=None)
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    user = await user_crud.get_user_model(db, user_id)
+    user = await user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return await user_crud.delete_user(db, user)

@@ -58,7 +58,7 @@ async def login_for_access_token(
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     if not user.is_active:
         # メールでの認証が完了していない場合
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=410, detail="Inactive user")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await user_crud.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -95,7 +95,7 @@ async def send_verification_email(
 
 @router.get("/email-confirmation/{token}", response_class=HTMLResponse)
 async def email_confirmation(token: str, db: AsyncSession = Depends(get_db)) -> str:
-    """メール認証を完了するルート"""
+    """メール認証の完了"""
     user = await get_current_user(db, token, is_email=True)
     return f"""
     <html>

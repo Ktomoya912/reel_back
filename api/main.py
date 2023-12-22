@@ -1,12 +1,12 @@
 import os
+import re
 import secrets
 from pathlib import Path
-import re
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from api.routers import auth, notice, user
+from api.routers import auth, event, notice, user
 
 
 class NoEnvironmentError(Exception):
@@ -19,6 +19,7 @@ app = FastAPI()
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(notice.router)
+app.include_router(event.router)
 
 
 def initialize():

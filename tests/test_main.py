@@ -40,82 +40,106 @@ async def test_get_hello(async_client) -> None:
 
 @pytest.mark.asyncio
 async def test_create_and_read(async_client: AsyncClient) -> None:
-    respose = await async_client.post(
-        "/users",
+    response = await async_client.post(
+        "/users?mail_auth=false",
         json={
             "username": "hoge1",
             "password": "i_am_password",
-            "email": "i_am_email1",
-            "gender": "",
-            "birthday": "2023-11-11 00:00:00",
-            "user_type": "default",
+            "email": "i-am-email1@example.com",
+            "sex": "",
+            "birthday": "2023-11-11",
+            "user_type": "g",
         },
     )
-    assert respose.status_code == 200
-    respose_json = respose.json()
-    assert respose_json["username"] == "hoge1"
-    assert respose_json["password"] != "i_am_password"
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["username"] == "hoge1"
+    assert response_json["password"] != "i_am_password"
 
-    respose = await async_client.get("/users")
-    assert respose.status_code == 200
-    respose_json = respose.json()
-    assert len(respose_json) == 1
-    assert respose_json[0]["username"] == "hoge1"
-    assert respose_json[0]["password"] != "i_am_password"
+    response = await async_client.get("/users")
+    assert response.status_code == 200
+    response_json = response.json()
+    assert len(response_json) == 1
+    assert response_json[0]["username"] == "hoge1"
+    assert response_json[0]["password"] != "i_am_password"
 
 
 @pytest.mark.asyncio
-async def test_create_and_update(async_client):
-    respose = await async_client.post(
-        "/users",
+async def test_create_and_update(async_client: AsyncClient):
+    response = await async_client.post(
+        "/users?mail_auth=false",
         json={
             "username": "hoge2",
             "password": "i_am_password",
-            "email": "i_am_email2",
-            "gender": "男",
-            "birthday": "2023-11-11 00:00:00",
-            "user_type": "default",
+            "email": "i_am_email2@example.com",
+            "sex": "m",
+            "birthday": "2023-11-11",
+            "user_type": "g",
         },
     )
-    assert respose.status_code == 200, respose.text
-    respose_json = respose.json()
-    id = respose_json["id"]
+    assert response.status_code == 200, response.text
+    response_json = response.json()
+    id = response_json["id"]
 
-    respose = await async_client.put(
+    response = await async_client.put(
         f"/users/{id}",
         json={
             "username": "hoge123",
             "password": "i_am_password",
-            "email": "i_am_email2",
-            "gender": "男",
-            "birthday": "2023-11-11 00:00:00",
-            "user_type": "default",
+            "email": "i_am_email2@example.com",
+            "gender": "m",
+            "birthday": "2023-11-11",
+            "user_type": "g",
         },
     )
-    assert respose.status_code == 200, respose.text
-    respose_json = respose.json()
-    assert respose_json["username"] == "hoge123"
-    assert respose_json["password"] != "i_am_password"
+    assert response.status_code == 200, response.text
+    response_json = response.json()
+    assert response_json["username"] == "hoge123"
+    assert response_json["password"] != "i_am_password"
 
 
 @pytest.mark.asyncio
-async def test_create_and_delete(async_client):
-    respose = await async_client.post(
-        "/users",
+async def test_create_and_delete(async_client: AsyncClient):
+    response = await async_client.post(
+        "/users?mail_auth=false",
         json={
             "username": "hoge3",
             "password": "i_am_password",
-            "email": "i_am_email3",
-            "gender": "女",
-            "birthday": "2023-11-11 00:00:00",
-            "user_type": "default",
+            "email": "i_am_email3@example.com",
+            "sex": "f",
+            "birthday": "2023-11-11",
+            "user_type": "g",
         },
     )
-    assert respose.status_code == 200, respose.text
-    respose_json = respose.json()
-    id = respose_json["id"]
+    assert response.status_code == 200, response.text
+    response_json = response.json()
+    id = response_json["id"]
 
-    respose = await async_client.delete(f"/users/{id}")
-    assert respose.status_code == 200
-    respose_json = respose.json()
-    assert respose_json is None
+    response = await async_client.delete(f"/users/{id}")
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json is None
+
+
+@pytest.mark.asyncio
+async def test_access_token(async_client: AsyncClient):
+    response = await async_client.post(
+        "/users?mail_auth=false",
+        json={
+            "username": "hoge1",
+            "password": "i_am_password",
+            "email": "sample@sample.com",
+            "sex": "o",
+            "birthday": "2023-11-11",
+        },
+    )
+
+    response = await async_client.post(
+        "/auth/token",
+        data={
+            "username": "hoge1",
+            "password": "i_am_password",
+        },
+    )
+    # in_activeエラーが出ればOK
+    assert response.status_code == 410, response.text
