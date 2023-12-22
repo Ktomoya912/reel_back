@@ -1,9 +1,11 @@
 import os
 from datetime import timedelta
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jinja2 import Template
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,18 +26,7 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     is_email: bool = False,
 ) -> user_schema.User:
-    """現在のユーザーの取得
-
-    Args:
-        db (AsyncSession, optional): DBセッション
-        token (str, optional): アクセストークン
-
-    Raises:
-        credentials_exception: 認証エラー
-
-    Returns:
-        user_schema.User: ユーザー情報
-    """
+    """現在のユーザーの取得"""
     credentials_exception = HTTPException(
         status_code=401, detail="Could not validate credentials"
     )
@@ -61,12 +52,13 @@ async def get_current_user(
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ) -> dict:
+    """ログインを行い、アクセストークンを返す"""
     user = await user_crud.authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
     if not user.is_active:
         # メールでの認証が完了していない場合
         raise HTTPException(status_code=400, detail="Inactive user")
-    if not user:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await user_crud.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -78,12 +70,7 @@ async def login_for_access_token(
 async def send_verification_email(
     email: str, db: AsyncSession = Depends(get_db)
 ) -> None:
-    """メール認証のメール送信
-
-    Args:
-        email (str): メールアドレス
-        db (AsyncSession, optional): DBセッション. Defaults to Depends(get_db).
-    """
+    """メール認証のメール送信"""
     user = await user_crud.get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -92,36 +79,23 @@ async def send_verification_email(
     token = await user_crud.create_access_token(
         data={"sub": user.username}, expires_delta=timedelta(minutes=15)
     )
-    sender = os.getenv("MAIL_SENDER")
-    if not sender:
-        raise Exception("環境変数が設定されていません。.envファイルにMAIL_SENDERを設定してください。")
+    html_file = Path(__file__).parent.parent / "templates" / "verify-email.html"
+    html = Template(html_file.read_text())
     send_email(
-        from_=sender,
+        from_=os.getenv("MAIL_SENDER"),
         to=email,
         subject="Verify your email",
-        body=f"""
-        <html>
-            <head></head>
-            <body>
-                <p>Verify your email</p>
-                <a href="http://localhost:8000/auth/email-confirmation/{token}">Verify</a>
-            </body>
-        </html>
-        """,
+        body=html.render(
+            username=user.username,
+            url=f"http://localhost:8000/auth/email-confirmation/{token}",
+        ),
     )
     return "Email sent"
 
 
 @router.get("/email-confirmation/{token}", response_class=HTMLResponse)
 async def email_confirmation(token: str, db: AsyncSession = Depends(get_db)) -> str:
-    """メール認証
-
-    Args:
-        token (str, optional): 認証トークン. Defaults to Depends(oauth2_scheme).
-
-    Returns:
-        str: 確認結果
-    """
+    """メール認証を完了するルート"""
     user = await get_current_user(db, token, is_email=True)
     return f"""
     <html>

@@ -50,6 +50,28 @@ class TokenData(BaseModel):
     username: Union[str, None] = None
 
 
+class MailBody(BaseModel):
+    email: str = Field(
+        ...,
+        example="my@example.com",
+        description="メールアドレス",
+        pattern=r"[\w\-._]+@[\w\-._]+",
+    )
+    subject: str = Field(
+        ...,
+        example="subject",
+        description="件名",
+    )
+    body: str = Field(
+        ...,
+        example="body",
+        description="本文",
+    )
+
+    class Config:
+        orm_mode = True
+
+
 class UserBase(BaseModel):
     username: str = Field(
         ...,
