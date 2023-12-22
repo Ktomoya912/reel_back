@@ -208,6 +208,15 @@ async def update_user(
     return original
 
 
+async def update_user_password(
+    db: AsyncSession, user: user_model.User, password: str
+) -> user_model.User:
+    user.password = password
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
 async def delete_user(db: AsyncSession, user: user_model.User) -> None:
     await db.delete(user)
     await db.commit()

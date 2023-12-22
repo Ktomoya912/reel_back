@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jinja2 import Template
@@ -107,3 +107,53 @@ async def email_confirmation(token: str, db: AsyncSession = Depends(get_db)) -> 
         </body>
     </html>
     """
+
+
+@router.post("/forgot-password")
+async def forgot_password(email: str, db: AsyncSession = Depends(get_db)) -> None:
+    """パスワードリセットのメール送信"""
+    user = await user_crud.get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    token = await user_crud.create_access_token(
+        data={"sub": user.username}, expires_delta=timedelta(minutes=15)
+    )
+    html_file = Path(__file__).parent.parent / "templates" / "reset-password.html"
+    html = Template(html_file.read_text())
+    send_email(
+        from_=os.getenv("MAIL_SENDER"),
+        to=email,
+        subject="Reset your password",
+        body=html.render(
+            username=user.username,
+            url=f"http://localhost:8000/auth/reset-password/{token}",
+        ),
+    )
+    return "Email sent"
+
+
+@router.get("/reset-password/{token}", response_class=HTMLResponse)
+async def reset_password_form(token: str) -> str:
+    """パスワードリセットのフォーム"""
+    return """
+    <html>
+        <head></head>
+        <body>
+            <form method="post">
+                <label for="new_password">New password</label>
+                <input type="password" id="new_password" name="new_password" required>
+                <input type="submit" value="Submit">
+            </form>
+        </body>
+    </html>
+    """
+
+
+@router.post("/reset-password/{token}")
+async def reset_password(
+    token: str, new_password: str = Form(), db: AsyncSession = Depends(get_db)
+) -> None:
+    """パスワードリセット"""
+    user = await get_current_user(db, token)
+    await user_crud.update_user_password(db, user, new_password)
+    return "Password updated successfully"
