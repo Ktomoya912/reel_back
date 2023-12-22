@@ -51,9 +51,26 @@ class TokenData(BaseModel):
 
 
 class UserBase(BaseModel):
-    username: str
-    password: str
-    email: str
+    username: str = Field(
+        ...,
+        example="username",
+        description="ユーザー名",
+        min_length=4,
+        max_length=16,
+        pattern=r"[\w\-._]+",
+    )
+    password: str = Field(
+        ...,
+        example="password",
+        description="パスワード",
+        min_length=8,
+    )
+    email: str = Field(
+        ...,
+        example="my@example.com",
+        description="メールアドレス",
+        pattern=r"[\w\-._]+@[\w\-._]+",
+    )
     sex: Optional[str] = Field(
         "o",
         example="男",
