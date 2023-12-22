@@ -1,11 +1,19 @@
 import os
 import secrets
 from pathlib import Path
+import re
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from api.routers import auth, notice, user
+
+
+class NoEnvironmentError(Exception):
+    def __init__(self, message=""):
+        self.message = f'環境変数が設定されていません。"{message}"が設定されているか確認してください。'
+        super().__init__(self.message)
+
 
 app = FastAPI()
 app.include_router(auth.router)
@@ -21,6 +29,11 @@ def initialize():
         with open(env_file, "a", encoding="utf-8") as f:
             f.write(f"SECRET_KEY={secrets.token_hex(32)}\n")
         load_dotenv(dotenv_path=env_file)
+    mail_sender = os.getenv("MAIL_SENDER")
+    if not mail_sender:
+        raise NoEnvironmentError("MAIL_SENDER")
+    elif not re.match(r"[\w\-._]+@[\w\-._]+", mail_sender):
+        raise ValueError("MAIL_SENDER")
 
 
 initialize()
