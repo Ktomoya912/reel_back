@@ -25,17 +25,35 @@ async def get_tag_from_name(db: AsyncSession, tag_name: str) -> tag_model.Tag:
 
 
 async def get_event_from_tag(
-    db: AsyncSession, tag_name: str
+    db: AsyncSession, tag_name: str, sort: str = "id", order: str = "asc"
 ) -> list[event_model.Event]:
+    try:
+        sort_column = getattr(event_model.Event, sort)
+    except AttributeError:
+        sort_column = event_model.Event.id
     tag = await get_tag_from_name(db, tag_name)
-    sql = select(event_model.Event).filter(event_model.Event.tags.any(tag))
+    sql = (
+        select(event_model.Event)
+        .filter(event_model.Event.tags.any(tag))
+        .order_by(sort_column if order == "asc" else sort_column.desc())
+    )
     result: Result = await db.execute(sql)
     return result.scalars()
 
 
-async def get_job_from_tag(db: AsyncSession, tag_name: str) -> list[job_model.Job]:
+async def get_job_from_tag(
+    db: AsyncSession, tag_name: str, sort: str = "id", order: str = "asc"
+) -> list[job_model.Job]:
+    try:
+        sort_column = getattr(job_model.Job, sort)
+    except AttributeError:
+        sort_column = job_model.Job.id
     tag = await get_tag_from_name(db, tag_name)
-    sql = select(job_model.Job).filter(job_model.Job.tags.any(tag))
+    sql = (
+        select(job_model.Job)
+        .filter(job_model.Job.tags.any(tag))
+        .order_by(sort_column if order == "asc" else sort_column.desc())
+    )
     result: Result = await db.execute(sql)
     return result.scalars()
 

@@ -36,21 +36,31 @@ async def get_recent_events(db: AsyncSession) -> list[event_model.Event]:
         ),
     )
     result: Result = await db.execute(sql)
-    return result.scalars()
+    return result.scalars().all()
 
 
 async def search_events(
     db: AsyncSession,
     keyword: str = "",
+    sort: str = "id",
+    order: str = "asc",
 ) -> list[event_model.Event]:
-    sql = select(event_model.Event).filter(
-        or_(
-            event_model.Event.title.like(f"%{keyword}%"),
-            event_model.Event.description.like(f"%{keyword}%"),
-        ),
+    try:
+        sort_column = getattr(event_model.Event, sort)
+    except AttributeError:
+        sort_column = event_model.Event.id
+    sql = (
+        select(event_model.Event)
+        .filter(
+            or_(
+                event_model.Event.title.like(f"%{keyword}%"),
+                event_model.Event.description.like(f"%{keyword}%"),
+            ),
+        )
+        .order_by(sort_column if order == "asc" else sort_column.desc())
     )
     result: Result = await db.execute(sql)
-    return result.scalars()
+    return result.scalars().all()
 
 
 async def get_events(
@@ -64,4 +74,4 @@ async def get_events(
         sort_column if order == "asc" else sort_column.desc()
     )
     result: Result = await db.execute(sql)
-    return result.scalars()
+    return result.scalars().all()
