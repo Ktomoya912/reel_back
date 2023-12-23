@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from api.routers import auth, event, notice, user
 
 
@@ -16,6 +16,13 @@ class NoEnvironmentError(Exception):
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ALLOW_ORIGINS", "*"),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(notice.router)

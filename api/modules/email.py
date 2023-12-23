@@ -9,14 +9,7 @@ class NoEnvironmentVariableError(Exception):
 
 
 def send_email(from_: str, to: list[str], subject: str, body: str) -> None:
-    """メール送信
-
-    Args:
-        from_ (str): 送信元メールアドレス
-        to (str): 送信先メールアドレス
-        subject (str): 件名
-        body (str): 本文
-    """
+    """メール送信"""
     if isinstance(to, str):
         to = [to]
     mail_password = os.environ.get("MAIL_PASSWORD")
