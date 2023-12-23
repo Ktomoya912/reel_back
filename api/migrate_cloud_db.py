@@ -30,6 +30,10 @@ def create_database():
         with root.connect() as conn:
             conn.execute(text("CREATE DATABASE demo"))
         print("データベースを作成しました")
+        Base.metadata.create_all(engine)
+        print("テーブルを作成しました")
+    else:
+        print("データベースは存在します")
 
 
 if __name__ == "__main__":
