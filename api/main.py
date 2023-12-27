@@ -16,20 +16,6 @@ class NoEnvironmentError(Exception):
         super().__init__(self.message)
 
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOW_ORIGINS", "*"),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(notice.router)
-app.include_router(event.router)
-
-
 def initialize():
     env_file = Path(".env")
     env_file.touch(exist_ok=True)
@@ -45,9 +31,24 @@ def initialize():
         raise ValueError("MAIL_SENDER")
 
 
-initialize()
+def create_app(config_name="production"):
+    if config_name == "production":
+        initialize()
+    app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=os.getenv("ALLOW_ORIGINS", "*"),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    app.include_router(auth.router)
+    app.include_router(user.router)
+    app.include_router(notice.router)
+    app.include_router(event.router)
 
+    @app.get("/hello")
+    def hello():
+        return {"message": "hello world!"}
 
-@app.get("/hello")
-def hello():
-    return {"message": "hello world!"}
+    return app
