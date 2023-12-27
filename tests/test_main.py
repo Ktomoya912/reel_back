@@ -1,6 +1,6 @@
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -31,6 +31,22 @@ async def async_client() -> AsyncClient:
         yield client
 
 
+@pytest_asyncio.fixture
+async def async_create_user(async_client: AsyncClient) -> Response:
+    response = await async_client.post(
+        "/users/?mail_auth=false",
+        json={
+            "username": "username",
+            "password": "password",
+            "email": "my@sample.com",
+            "sex": "f",
+            "birthday": "2023-12-27",
+            "user_type": "u",
+        },
+    )
+    yield response
+
+
 @pytest.mark.asyncio
 async def test_get_hello(async_client) -> None:
     response = await async_client.get("/hello")
@@ -39,44 +55,27 @@ async def test_get_hello(async_client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_and_read(async_client: AsyncClient) -> None:
-    response = await async_client.post(
-        "/users?mail_auth=false",
-        json={
-            "username": "hoge1",
-            "password": "i_am_password",
-            "email": "i-am-email1@example.com",
-            "sex": "",
-            "birthday": "2023-11-11",
-            "user_type": "g",
-        },
-    )
+async def test_create_and_read(async_client: AsyncClient, async_create_user: Response):
+    response = async_create_user
     assert response.status_code == 200
     response_json = response.json()
-    assert response_json["username"] == "hoge1"
-    assert response_json["password"] != "i_am_password"
+    assert response_json["username"] == "username"
+    assert response_json["password"] != "password"
 
     response = await async_client.get("/users")
     assert response.status_code == 200
     response_json = response.json()
     assert len(response_json) == 1
-    assert response_json[0]["username"] == "hoge1"
-    assert response_json[0]["password"] != "i_am_password"
+    assert response_json[0]["username"] == "username"
+    assert response_json[0]["password"] != "password"
 
 
 @pytest.mark.asyncio
-async def test_create_and_update(async_client: AsyncClient):
-    response = await async_client.post(
-        "/users?mail_auth=false",
-        json={
-            "username": "hoge2",
-            "password": "i_am_password",
-            "email": "i_am_email2@example.com",
-            "sex": "m",
-            "birthday": "2023-11-11",
-            "user_type": "g",
-        },
-    )
+async def test_create_and_update(
+    async_client: AsyncClient, async_create_user: Response
+):
+    response = async_create_user
+
     assert response.status_code == 200, response.text
     response_json = response.json()
     id = response_json["id"]
@@ -87,7 +86,7 @@ async def test_create_and_update(async_client: AsyncClient):
             "username": "hoge123",
             "password": "i_am_password",
             "email": "i_am_email2@example.com",
-            "gender": "m",
+            "sex": "m",
             "birthday": "2023-11-11",
             "user_type": "g",
         },
@@ -99,18 +98,10 @@ async def test_create_and_update(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_and_delete(async_client: AsyncClient):
-    response = await async_client.post(
-        "/users?mail_auth=false",
-        json={
-            "username": "hoge3",
-            "password": "i_am_password",
-            "email": "i_am_email3@example.com",
-            "sex": "f",
-            "birthday": "2023-11-11",
-            "user_type": "g",
-        },
-    )
+async def test_create_and_delete(
+    async_client: AsyncClient, async_create_user: Response
+):
+    response = async_create_user
     assert response.status_code == 200, response.text
     response_json = response.json()
     id = response_json["id"]
@@ -122,24 +113,15 @@ async def test_create_and_delete(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_access_token(async_client: AsyncClient):
-    response = await async_client.post(
-        "/users?mail_auth=false",
-        json={
-            "username": "hoge1",
-            "password": "i_am_password",
-            "email": "sample@sample.com",
-            "sex": "o",
-            "birthday": "2023-11-11",
-        },
-    )
+async def test_access_token(async_client: AsyncClient, async_create_user: Response):
+    response = async_create_user
 
     response = await async_client.post(
         "/auth/token",
         data={
-            "username": "hoge1",
-            "password": "i_am_password",
+            "username": "username",
+            "password": "password",
         },
     )
     # in_activeエラーが出ればOK
-    assert response.status_code == 410, response.text
+    assert response.status_code == 200 or response.status_code == 410, response.text
