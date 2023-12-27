@@ -21,3 +21,12 @@ async def get_notifications(
         event_messages,
         job_messages,
     ]
+@router.post("/{message_id}/read")
+async def read_notification(
+    message_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: user_schema.User = Depends(get_current_user),
+) -> message_schema.Message:
+    await message_crud.read_message(db, message_id, current_user.id)
+    message = await message_crud.get_message(db, message_id)
+    return message
