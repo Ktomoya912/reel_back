@@ -21,10 +21,14 @@ ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
+def is_product():
+    return True
+
+
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-    is_email: bool = False,
+    is_email: bool = Depends(is_product),
 ) -> user_schema.User:
     """現在のユーザーの取得"""
     credentials_exception = HTTPException(

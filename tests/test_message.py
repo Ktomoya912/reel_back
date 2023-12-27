@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from api.db import Base, get_db
 from api.main import app
-from api.routers.auth import get_current_user
+from api.routers.auth import get_current_user, is_product
 
 ASYNC_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -35,6 +35,7 @@ async def async_client() -> AsyncClient:
 
     app.dependency_overrides[get_db] = get_test_db
     app.dependency_overrides[get_current_user] = MockUser
+    app.dependency_overrides[is_product] = lambda: False
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
@@ -43,7 +44,7 @@ async def async_client() -> AsyncClient:
 @pytest.mark.asyncio
 async def test_create_and_read(async_client: AsyncClient) -> None:
     response = await async_client.post(
-        "/notices/?mail_auth=false",
+        "/notices/",
         json={
             "title": "this is message",
             "message": "string",
