@@ -7,7 +7,7 @@ from api.db import get_db
 
 from .auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/notices", tags=["notices"])
 
 
 @router.get("/notifications")

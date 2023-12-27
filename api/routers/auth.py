@@ -14,7 +14,7 @@ import api.schemas.user as user_schema
 from api.db import get_db
 from api.modules.email import send_email
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["auth"])
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALGORITHM = "HS256"
 
@@ -56,9 +56,9 @@ async def login_for_access_token(
     user = await user_crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    if not user.is_active:
-        # メールでの認証が完了していない場合
-        raise HTTPException(status_code=410, detail="Inactive user")
+    # if not user.is_active:
+    #     # メールでの認証が完了していない場合
+    #     raise HTTPException(status_code=410, detail="Inactive user")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await user_crud.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
