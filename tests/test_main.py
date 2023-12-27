@@ -37,7 +37,7 @@ async def async_client() -> AsyncClient:
 @pytest_asyncio.fixture
 async def async_create_user(async_client: AsyncClient) -> Response:
     response = await async_client.post(
-        "/users/",
+        "/users/?mail_auth=false",
         json={
             "username": "username",
             "password": "password",

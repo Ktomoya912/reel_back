@@ -34,6 +34,8 @@ def initialize():
 def create_app(config_name="production"):
     if config_name == "production":
         initialize()
+    elif config_name == "test":
+        os.environ["SECRET_KEY"] = "test"
     app = FastAPI()
     app.add_middleware(
         CORSMiddleware,

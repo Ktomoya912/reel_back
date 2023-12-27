@@ -28,7 +28,7 @@ def is_product():
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-    is_email: bool = Depends(is_product),
+    is_pdct: bool = Depends(is_product),
 ) -> user_schema.User:
     """現在のユーザーの取得"""
     credentials_exception = HTTPException(
@@ -45,7 +45,7 @@ async def get_current_user(
     user = await user_crud.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
-    if is_email:
+    if is_pdct:
         user.is_active = True
         await db.commit()
         await db.refresh(user)
@@ -54,15 +54,17 @@ async def get_current_user(
 
 @router.post("/token", response_model=user_schema.Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+    is_pdct: bool = Depends(is_product),
 ) -> dict:
     """ログインを行い、アクセストークンを返す"""
     user = await user_crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    # if not user.is_active:
-    #     # メールでの認証が完了していない場合
-    #     raise HTTPException(status_code=410, detail="Inactive user")
+    if not user.is_active and is_pdct:
+        # メールでの認証が完了していない場合
+        raise HTTPException(status_code=410, detail="Inactive user")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await user_crud.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
