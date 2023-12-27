@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from api.db import Base, get_db
-from api.main import app
+from api.main import create_app
 from api.routers.auth import get_current_user, is_product
 
 ASYNC_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -20,6 +20,7 @@ class MockUser(BaseModel):
 
 @pytest_asyncio.fixture
 async def async_client() -> AsyncClient:
+    app = create_app("test")
     async_engine = create_async_engine(ASYNC_DB_URL, echo=True)
     async_session = sessionmaker(
         autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession
