@@ -162,3 +162,11 @@ $ docker-compose run --entrypoint "poetry run pytest" demo-app
     ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
 - [SQLAlchemyとFastAPIのリレーション](https://qiita.com/shimi7o/items/c009014b864c4412884a)  
     SQLAlchemyでのリレーションの書き方がわからない場合はここを参照すると良い。
+
+## その他
+### 詰まったこと
+ ```fastapi.exceptions.ResponseValidationError: <exception str() failed>```というエラーが出た場合、モデルインスタンスを用いる前に(return objなど)
+```python
+await db.reflesh(obj)
+```
+を行うことで解決する。
