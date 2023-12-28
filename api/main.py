@@ -24,18 +24,10 @@ def initialize():
         with open(env_file, "a", encoding="utf-8") as f:
             f.write(f"SECRET_KEY={secrets.token_hex(32)}\n")
         load_dotenv(dotenv_path=env_file)
-    mail_sender = os.getenv("MAIL_SENDER")
-    if not mail_sender:
-        raise NoEnvironmentError("MAIL_SENDER")
-    elif not re.match(r"[\w\-._]+@[\w\-._]+", mail_sender):
-        raise ValueError("MAIL_SENDER")
 
 
-def create_app(config_name="production"):
-    if config_name == "production":
-        initialize()
-    elif config_name == "test":
-        os.environ["SECRET_KEY"] = "test"
+def create_app():
+    initialize()
     app = FastAPI()
     app.add_middleware(
         CORSMiddleware,

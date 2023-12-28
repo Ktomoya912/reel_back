@@ -4,16 +4,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class BaseConfig(BaseSettings, extra="allow"):
     SECRET_KEY: str
-    MAIL_SENDER: str = Field(..., pattern=r"[\w\-._]+@[\w\-._]+")
     IS_PRODUCT: bool = False
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 class DevelopConfig(BaseConfig):
-    pass
+    MAIL_SENDER: str = Field(..., pattern=r"[\w\-._]+@[\w\-._]+")
 
 
 class ProductConfig(BaseConfig):
+    MAIL_SENDER: str = Field(..., pattern=r"[\w\-._]+@[\w\-._]+")
     IS_PRODUCT: bool = True
 
 
