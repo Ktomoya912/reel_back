@@ -1,13 +1,13 @@
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, Response
+from httpx import AsyncClient
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from api.db import Base, get_db
+from api.dependencies import get_config, get_current_user, get_test_config
 from api.main import create_app
-from api.routers.auth import get_current_user, is_product
 
 ASYNC_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -36,7 +36,7 @@ async def async_client() -> AsyncClient:
 
     app.dependency_overrides[get_db] = get_test_db
     app.dependency_overrides[get_current_user] = MockUser
-    app.dependency_overrides[is_product] = lambda: False
+    app.dependency_overrides[get_config] = get_test_config
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client

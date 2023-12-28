@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from api.db import Base, get_db
-from api.routers.auth import is_product
+from api.dependencies import get_config, get_test_config
 from api.main import create_app
 
 ASYNC_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -28,7 +28,7 @@ async def async_client() -> AsyncClient:
             yield session
 
     app.dependency_overrides[get_db] = get_test_db
-    app.dependency_overrides[is_product] = lambda: False
+    app.dependency_overrides[get_config] = get_test_config
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
@@ -37,7 +37,7 @@ async def async_client() -> AsyncClient:
 @pytest_asyncio.fixture
 async def async_create_user(async_client: AsyncClient) -> Response:
     response = await async_client.post(
-        "/users/?mail_auth=false",
+        "/users/",
         json={
             "username": "username",
             "password": "password",

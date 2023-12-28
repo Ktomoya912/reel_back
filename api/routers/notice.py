@@ -6,7 +6,7 @@ import api.schemas.message as message_schema
 import api.schemas.user as user_schema
 from api.db import get_db
 
-from .auth import get_current_user
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/notices", tags=["notices"])
 

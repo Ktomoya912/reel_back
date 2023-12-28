@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
@@ -35,7 +34,7 @@ async def authenticate_user(
 
 
 async def create_access_token(
-    data: dict, expires_delta: Optional[timedelta] = None
+    secret_key: str, data: dict, expires_delta: Optional[timedelta] = None
 ) -> str:
     """アクセストークンの生成"""
     to_encode = data.copy()
@@ -44,7 +43,7 @@ async def create_access_token(
     else:
         expire = datetime.now() + timedelta(days=30)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
