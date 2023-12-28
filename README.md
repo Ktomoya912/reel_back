@@ -155,6 +155,20 @@ $ docker-compose exec db bash -c "mysql"
 $ docker-compose run --entrypoint "poetry run pytest" demo-app
 ```
 
+## デプロイ
+デプロイはAWSのEC2を使用して行う。
+EC2上で、このリポジトリをクローンし、以下のコマンドを実行することでデプロイが行われる。
+```shell
+docker build -t reel-back:latest --platform linux/amd64 -f Dockerfile.cloud .
+```
+docker image が作成されたら、以下のコマンドを実行することでコンテナが立ち上がる。
+```shell
+docker run -d -p 8000:8000 --name reel-back reel-back:latest
+```
+ここでエラーが出る場合は、```.env```ファイルを作成していない、もしくは、必要になる環境変数が設定されていない可能性があるので、確認すること。
+
+以上でデプロイは完了する。
+
 ## 参考
 - [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)  
     基本はここに書かれているのでここを参照すると作業が捗る。
