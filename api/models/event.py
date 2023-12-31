@@ -53,7 +53,7 @@ class Event(BaseModel):
     email = Column(String(255))
     homepage = Column(String(255))
     description = Column(Text)
-    particication_fee = Column(String(255))
+    participation_fee = Column(String(255))
     capacity = Column(Integer)
     period = Column(DateTime)
     status = Column(String(2))
