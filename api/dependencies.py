@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import api.cruds.user as user_crud
+import api.models.user as user_model
 import api.schemas.user as user_schema
 from api import config
 from api.db import get_db
@@ -33,10 +34,10 @@ def get_test_config():
 
 
 async def get_current_user(
-    settings: Annotated[config.BaseConfig, Depends(get_config)],
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-) -> user_schema.User:
+    settings: config.BaseConfig = Depends(get_config),
+) -> user_model.User:
     """現在のユーザーの取得"""
     credentials_exception = HTTPException(
         status_code=401, detail="Could not validate credentials"
@@ -52,8 +53,13 @@ async def get_current_user(
     user = await user_crud.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
-    if settings.IS_PRODUCT:
-        user.is_active = True
-        await db.commit()
-        await db.refresh(user)
     return user
+
+
+async def get_current_active_user(
+    settings: Annotated[config.BaseConfig, Depends(get_config)],
+    current_user: user_model.User = Depends(get_current_user),
+):
+    if not current_user.is_active and settings.IS_PRODUCT:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
