@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from jinja2 import Template
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,25 +19,33 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=user_schema.UserCreateResponse)
 async def create_user(
+    request: Request,
+    background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: user_schema.UserCreate,
     db: AsyncSession = Depends(get_db),
 ):
     user = await user_crud.create_user(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(user.email, db)
+        await auth_router.send_verification_email(
+            request, background_tasks, settings=settings, email=user.email, db=db
+        )
     return user
 
 
 @router.post("/company", response_model=user_schema.UserCreateResponse)
 async def create_user_company(
+    request: Request,
+    background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: user_schema.UserCreateCompany,
     db: AsyncSession = Depends(get_db),
 ):
     user = await user_crud.create_user_company(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(user.email, db)
+        await auth_router.send_verification_email(
+            request, background_tasks, settings=settings, email=user.email, db=db
+        )
     return user
 
 
