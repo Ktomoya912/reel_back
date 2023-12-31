@@ -2,7 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from jinja2 import Template
@@ -43,8 +43,10 @@ async def login_for_access_token(
 
 @router.post("/send-verification-email")
 async def send_verification_email(
-    settings: Annotated[config.BaseConfig, Depends(get_config)],
+    request: Request,
+    background_tasks: BackgroundTasks,
     email: str,
+    settings: config.BaseConfig = Depends(get_config),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """メール認証のメール送信"""
@@ -60,22 +62,30 @@ async def send_verification_email(
     )
     html_file = Path(__file__).parent.parent / "templates" / "verify-email.html"
     html = Template(html_file.read_text())
-    send_email(
+    background_tasks.add_task(
+        send_email,
         from_=settings.MAIL_SENDER,
         to=email,
         subject="Verify your email",
         body=html.render(
             username=user.username,
-            url=f"http://localhost:8000/auth/email-confirmation/{token}",
+            url=request.url_for("email_confirmation", token=token),
         ),
     )
     return "Email sent"
 
 
 @router.get("/email-confirmation/{token}", response_class=HTMLResponse)
-async def email_confirmation(token: str, db: AsyncSession = Depends(get_db)) -> str:
+async def email_confirmation(
+    settings: Annotated[config.BaseConfig, Depends(get_config)],
+    token: str,
+    db: AsyncSession = Depends(get_db),
+) -> str:
     """メール認証の完了"""
-    user = await get_current_user(db, token, is_email=True)
+    user = await get_current_user(settings=settings, db=db, token=token)
+    user.is_active = True
+    await db.commit()
+    await db.refresh(user)
     return f"""
     <html>
         <head></head>
