@@ -22,16 +22,16 @@ async def common_parameters(
     return {"db": db, "sort": sort, "order": order, "offset": offset, "limit": limit}
 
 
-@router.post("/", response_model=event_schema.Event)
+@router.post("/")
 async def create_event(
     current_user: Annotated[dict, Depends(get_current_active_user)],
     event_create: event_schema.EventCreate,
     db: AsyncSession = Depends(get_db),
 ):
     event = await event_crud.create_event(db, event_create)
-    # event = await event_crud.create_event_times(db, event, event_create.event_times)
+    event = await event_crud.create_event_times(db, event, event_create.event_times)
     # event = await tag_crud.create_event_tags(db, event, event_create.tags)
-    return event
+    return {"message": "Created successfully"}
 
 
 @router.get("/", response_model=list[event_schema.Event])

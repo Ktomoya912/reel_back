@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import or_
+from sqlalchemy.orm import selectinload
 
 import api.cruds.tag as tag_crud
 import api.models.event as event_model
@@ -28,10 +29,11 @@ async def create_event_times(
 ) -> event_model.EventTime:
     for event_time in event_times:
         tmp = event_time.model_dump()
+        tmp["event_id"] = event.id
         event_time = event_model.EventTime(**tmp)
-        event.event_times.append(event_time)
-    await db.commit()
-    await db.refresh(event)
+        db.add(event_time)
+        await db.commit()
+        await db.refresh(event_time)
     return event
 
 
@@ -53,17 +55,15 @@ async def update_event(
 
 async def get_event(db: AsyncSession, id: int) -> event_model.Event:
     sql = (
-        select(
-            event_model.Event,
-            event_model.EventReview,
-            event_model.EventTime,
-            event_model.EventTag,
+        select(event_model.Event)
+        .options(
+            selectinload(event_model.Event.event_times),
+            selectinload(event_model.Event.tags),
+            selectinload(event_model.Event.reviews),
         )
         .filter(event_model.Event.id == id)
-        .join(event_model.EventReview)
-        .join(event_model.EventTime)
-        .join(event_model.EventTag)
     )
+
     result: Result = await db.execute(sql)
     return result.scalar_one()
 
@@ -119,6 +119,11 @@ async def search_events(
         sort_column = event_model.Event.id
     sql = (
         select(event_model.Event)
+        .options(
+            selectinload(event_model.Event.event_times),
+            selectinload(event_model.Event.tags),
+            selectinload(event_model.Event.reviews),
+        )
         .filter(
             or_(
                 event_model.Event.title.like(f"%{keyword}%"),
@@ -138,8 +143,14 @@ async def get_events(
         sort_column = getattr(event_model.Event, sort)
     except AttributeError:
         sort_column = event_model.Event.id
-    sql = select(event_model.Event).order_by(
-        sort_column if order == "asc" else sort_column.desc()
+    sql = (
+        select(event_model.Event)
+        .order_by(sort_column if order == "asc" else sort_column.desc())
+        .options(
+            selectinload(event_model.Event.event_times),
+            selectinload(event_model.Event.tags),
+            selectinload(event_model.Event.reviews),
+        )
     )
     result: Result = await db.execute(sql)
     return result.scalars().all()
