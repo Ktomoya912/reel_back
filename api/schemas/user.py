@@ -101,9 +101,10 @@ class UserBase(BaseModel):
     )
     birthday: datetime.date
     user_type: str = Field(
-        "u",
-        example="u",
+        "g",
+        example="g",
         description="ユーザータイプ",
+        pattern=r"[gca]",
     )
 
     @field_serializer("password")
