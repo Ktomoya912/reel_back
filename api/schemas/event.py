@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+import api.schemas.tag as tag_schema
+
 
 class EventTimeBase(BaseModel):
     start_time: datetime = Field(..., example="2023-12-31 23:59:59", description="開始日時")
@@ -14,27 +16,6 @@ class EventTimeCreate(EventTimeBase):
 
 
 class EventTime(EventTimeBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-
-class EventTagBase(BaseModel):
-    name: str = Field(
-        ...,
-        example="タグ名",
-        description="タグ名",
-        min_length=1,
-        max_length=20,
-    )
-
-
-class EventTagCreate(EventTagBase):
-    pass
-
-
-class EventTag(EventTagBase):
     id: int
 
     class Config:
@@ -84,6 +65,13 @@ class EventBase(BaseModel):
         min_length=5,
         max_length=100,
     )
+
+
+class EventListView(EventBase):
+    id: int = Field(..., example=1, description="イベントID")
+
+
+class EventCreate(EventBase):
     postal_code: str = Field(
         ...,
         example="782-8502",
@@ -137,24 +125,21 @@ class EventBase(BaseModel):
         example=100,
         description="定員",
     )
-    # additional_message: str = Field(
-    #     ...,
-    #     example="",
-    #     description="追加メッセージ",
-    #     max_length=100,
-    # )
+    additional_message: str = Field(
+        ...,
+        example="",
+        description="追加メッセージ",
+        max_length=1000,
+    )
     description: str = Field(
         ...,
         example="",
         description="説明",
         max_length=1000,
     )
-
-
-class EventCreate(EventBase):
-    tags: Optional[List[EventTagCreate]] = Field(
+    tags: Optional[List[tag_schema.TagCreate]] = Field(
         ...,
-        example=[],
+        example=[{"name": "タグ名"}],
         description="タグ",
     )
     event_times: List[EventTimeCreate] = Field(
@@ -169,10 +154,9 @@ class EventCreate(EventBase):
         orm_mode = True
 
 
-class Event(EventBase):
-    id: int
-    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
-    tags: Optional[List[EventTag]] = Field(
+class Event(EventCreate, EventListView):
+    # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
+    tags: Optional[List[tag_schema.Tag]] = Field(
         [],
         example=[],
         description="タグ",
@@ -189,9 +173,6 @@ class Event(EventBase):
         example=[],
         description="レビュー",
     )
-
-    class Config:
-        orm_mode = True
 
 
 class BaseImpression(BaseModel):

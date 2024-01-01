@@ -34,12 +34,9 @@ class EventBookmark(BaseModel):
 class EventWatched(BaseModel):
     __tablename__ = "event_watched"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    event_id = Column(Integer, ForeignKey("events.id"))
-
-    user = relationship("User", back_populates="event_watched")
-    event = relationship("Event", back_populates="watched_users")
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
+    count = Column(Integer, default=1)
 
 
 class Event(BaseModel):
@@ -57,6 +54,8 @@ class Event(BaseModel):
     capacity = Column(Integer)
     period = Column(DateTime)
     status = Column(String(2))
+    additional_message = Column(Text)
+    caution = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     event_times = relationship("EventTime", backref="event")
@@ -65,4 +64,8 @@ class Event(BaseModel):
     bookmark_users = relationship(
         "User", secondary="event_bookmarks", back_populates="event_bookmarks"
     )
-    watched_users = relationship("EventWatched", back_populates="event")
+    watched_users = relationship(
+        "User",
+        back_populates="event_watched",
+        secondary="event_watched",
+    )

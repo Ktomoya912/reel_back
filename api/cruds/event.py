@@ -12,10 +12,10 @@ import api.schemas.event as event_schema
 
 
 def create_event(
-    db: Session, event_create: event_schema.EventCreate
+    db: Session, event_create: event_schema.EventCreate, user_id: int
 ) -> event_model.Event:
     tmp = event_create.model_dump(exclude={"tags", "event_times"})
-    event = event_model.Event(**tmp)
+    event = event_model.Event(**tmp, user_id=user_id)
     db.add(event)
     db.commit()
     return event
@@ -51,10 +51,27 @@ def update_event(
     return event
 
 
-def get_event(db: Session, id: int, user_id: int) -> event_model.Event:
+def get_event(db: Session, id: int) -> event_model.Event:
     event = db.query(event_model.Event).filter(event_model.Event.id == id).first()
+    return event
+
+
+def watch_event(db: Session, id: int, user_id: int) -> event_model.Event:
+    event = get_event(db, id)
     user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
-    event.watched_users.append(user)
+    watched_users = (
+        db.query(event_model.EventWatched)
+        .filter(
+            event_model.EventWatched.user_id == user.id,
+            event_model.EventWatched.event_id == event.id,
+        )
+        .first()
+    )
+    if watched_users is None:
+        watched_users = event_model.EventWatched(user_id=user.id, event_id=event.id)
+        db.add(watched_users)
+    else:
+        watched_users.count += 1
     db.commit()
     return event
 
@@ -73,13 +90,16 @@ def get_event_from_tag(db: Session, tag_name: str) -> list[event_model.Event]:
 
 # 開催時期が3日以内のイベントを取得
 def get_recent_events(db: Session) -> list[event_model.Event]:
+    now = datetime.datetime.now()
+    start_time = now + datetime.timedelta(days=3)
     events = (
         db.query(event_model.Event)
+        .join(event_model.EventTime)
         .filter(
-            event_model.Event.start_date
-            <= datetime.date.today() + datetime.timedelta(days=3)
+            event_model.EventTime.start_time >= now,
+            event_model.EventTime.start_time <= start_time,
+            event_model.Event.status == "1",
         )
-        .filter(event_model.Event.status == "1")
         .all()
     )
     return events
@@ -93,8 +113,8 @@ def search_events(
         db.query(event_model.Event)
         .filter(
             or_(
-                event_model.Event.title.like(f"%{keyword}%"),
-                event_model.Event.description.like(f"%{keyword}%"),
+                event_model.Event.name.contains(keyword),
+                event_model.Event.description.contains(keyword),
             )
         )
         .filter(event_model.Event.status == "1")
@@ -103,5 +123,7 @@ def search_events(
     return events
 
 
-def get_events(db: Session) -> list[event_model.Event]:
-    return db.query(event_model.Event).filter(event_model.Event.status == "1").all()
+def get_events(db: Session, only_active: bool = True) -> list[event_model.Event]:
+    if only_active:
+        return db.query(event_model.Event).filter(event_model.Event.status == "1").all()
+    return db.query(event_model.Event).all()
