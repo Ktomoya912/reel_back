@@ -2,9 +2,8 @@ import os
 import re
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer
+from sqlalchemy import Column, DateTime, Integer, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -62,7 +61,7 @@ async def get_async_db():
             await session.close()
 
 
-def get_db():
+def get_db() -> Session:
     db = Session()
     try:
         yield db
