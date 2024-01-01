@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from jinja2 import Template
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
 import api.routers.auth as auth_router
@@ -18,74 +18,74 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", response_model=user_schema.UserCreateResponse)
-async def create_user(
+def create_user(
     request: Request,
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: user_schema.UserCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    user = await user_crud.create_user(db, user_body)
+    user = user_crud.create_user(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(
+        auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
     return user
 
 
 @router.post("/company", response_model=user_schema.UserCreateResponse)
-async def create_user_company(
+def create_user_company(
     request: Request,
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: user_schema.UserCreateCompany,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    user = await user_crud.create_user_company(db, user_body)
+    user = user_crud.create_user_company(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(
+        auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
     return user
 
 
 @router.get("", response_model=list[user_schema.User])
-async def get_users(db: AsyncSession = Depends(get_db)):
-    return await user_crud.get_users(db)
+def get_users(db: Session = Depends(get_db)):
+    return user_crud.get_users(db)
 
 
 @router.get("/me", response_model=user_schema.User)
-async def get_user_me(
+def get_user_me(
     current_user: user_schema.User = Depends(get_current_user),
 ):
     return current_user
 
 
 @router.get("/{user_id}", response_model=user_schema.User)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    return await user_crud.get_user(db, user_id)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return user_crud.get_user(db, user_id)
 
 
 @router.put("/{user_id}", response_model=user_schema.UserCreateResponse)
-async def update_user(
-    user_id: int, user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
+def update_user(
+    user_id: int, user_body: user_schema.UserCreate, db: Session = Depends(get_db)
 ):
-    user = await user_crud.get_user(db, user_id)
+    user = user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return await user_crud.update_user(db, user_body, original=user)
+    return user_crud.update_user(db, user_body, original=user)
 
 
 @router.delete("/{user_id}", response_model=None)
-async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    user = await user_crud.get_user(db, user_id)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return await user_crud.delete_user(db, user)
+    return user_crud.delete_user(db, user)
 
 
 @router.post("/send-mail-to-admin", response_model=None)
-async def send_mail_to_admin(
+def send_mail_to_admin(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     mail_body: user_schema.MailBody,
 ):

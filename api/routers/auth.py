@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Re
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from jinja2 import Template
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
 import api.schemas.user as user_schema
@@ -20,20 +20,20 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 @router.post("/token", response_model=user_schema.Token)
-async def login_for_access_token(
+def login_for_access_token(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> dict:
     """ログインを行い、アクセストークンを返す"""
-    user = await user_crud.authenticate_user(db, form_data.username, form_data.password)
+    user = user_crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     if not user.is_active and settings.IS_PRODUCT:
         # メールでの認証が完了していない場合
         raise HTTPException(status_code=410, detail="Inactive user")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = await user_crud.create_access_token(
+    access_token = user_crud.create_access_token(
         secret_key=settings.SECRET_KEY,
         data={"sub": user.username},
         expires_delta=access_token_expires,
@@ -42,20 +42,20 @@ async def login_for_access_token(
 
 
 @router.post("/send-verification-email")
-async def send_verification_email(
+def send_verification_email(
     request: Request,
     background_tasks: BackgroundTasks,
     email: str,
     settings: config.BaseConfig = Depends(get_config),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> None:
     """メール認証のメール送信"""
-    user = await user_crud.get_user_by_email(db, email)
+    user = user_crud.get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.is_active and settings.IS_PRODUCT:
         raise HTTPException(status_code=400, detail="User already active")
-    token = await user_crud.create_access_token(
+    token = user_crud.create_access_token(
         secret_key=settings.SECRET_KEY,
         data={"sub": user.username},
         expires_delta=timedelta(minutes=15),
@@ -76,16 +76,15 @@ async def send_verification_email(
 
 
 @router.get("/email-confirmation/{token}", response_class=HTMLResponse)
-async def email_confirmation(
+def email_confirmation(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> str:
     """メール認証の完了"""
-    user = await get_current_user(settings=settings, db=db, token=token)
+    user = get_current_user(settings=settings, db=db, token=token)
     user.is_active = True
-    await db.commit()
-    await db.refresh(user)
+    db.commit()
     return f"""
     <html>
         <head></head>
@@ -99,16 +98,16 @@ async def email_confirmation(
 
 
 @router.post("/forgot-password")
-async def forgot_password(
+def forgot_password(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     email: str,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> None:
     """パスワードリセットのメール送信"""
-    user = await user_crud.get_user_by_email(db, email)
+    user = user_crud.get_user_by_email(db, email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    token = await user_crud.create_access_token(
+    token = user_crud.create_access_token(
         secret_key=settings.SECRET_KEY,
         data={"sub": user.username},
         expires_delta=timedelta(minutes=15),
@@ -128,7 +127,7 @@ async def forgot_password(
 
 
 @router.get("/reset-password/{token}", response_class=HTMLResponse)
-async def reset_password_form(token: str) -> str:
+def reset_password_form(token: str) -> str:
     """パスワードリセットのフォーム"""
     return """
     <html>
@@ -145,10 +144,10 @@ async def reset_password_form(token: str) -> str:
 
 
 @router.post("/reset-password/{token}")
-async def reset_password(
-    token: str, new_password: str = Form(), db: AsyncSession = Depends(get_db)
+def reset_password(
+    token: str, new_password: str = Form(), db: Session = Depends(get_db)
 ) -> None:
     """パスワードリセット"""
-    user = await get_current_user(db, token)
-    await user_crud.update_user_password(db, user, new_password)
+    user = get_current_user(db, token)
+    user_crud.update_user_password(db, user, new_password)
     return "Password updated successfully"

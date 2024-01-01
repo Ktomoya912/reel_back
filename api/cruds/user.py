@@ -52,7 +52,7 @@ def create_company(
     company = company_model.Company(**tmp)
     db.add(company)
     db.commit()
-    db.refresh(company)
+
     return company
 
 

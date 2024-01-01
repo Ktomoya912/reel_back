@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
 import api.models.user as user_model
@@ -33,8 +33,8 @@ def get_test_config():
     return config.TestConfig()
 
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db),
+def get_current_user(
+    db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
     settings: config.BaseConfig = Depends(get_config),
 ) -> user_model.User:
@@ -50,16 +50,16 @@ async def get_current_user(
         token_data = user_schema.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = await user_crud.get_user_by_username(db, username=token_data.username)
+    user = user_crud.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-async def get_current_active_user(
+def get_current_active_user(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     current_user: user_model.User = Depends(get_current_user),
-):
+) -> user_model.User:
     if not current_user.is_active and settings.IS_PRODUCT:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user

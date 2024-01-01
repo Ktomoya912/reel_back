@@ -2,27 +2,27 @@ import datetime
 
 from sqlalchemy import select
 from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import or_
 
 import api.cruds.tag as tag_crud
 import api.models.event as event_model
+import api.models.user as user_model
 import api.schemas.event as event_schema
 
 
-async def create_event(
-    db: AsyncSession, event_create: event_schema.EventCreate
+def create_event(
+    db: Session, event_create: event_schema.EventCreate
 ) -> event_model.Event:
     tmp = event_create.model_dump(exclude={"tags", "event_times"})
     event = event_model.Event(**tmp)
     db.add(event)
-    await db.commit()
-    await db.refresh(event)
+    db.commit()
     return event
 
 
-async def create_event_times(
-    db: AsyncSession,
+def create_event_times(
+    db: Session,
     event: event_model.Event,
     event_times: list[event_schema.EventTimeCreate],
 ) -> event_model.EventTime:
@@ -30,116 +30,78 @@ async def create_event_times(
         tmp = event_time.model_dump()
         event_time = event_model.EventTime(**tmp)
         event.event_times.append(event_time)
-    await db.commit()
-    await db.refresh(event)
+    db.commit()
+
     return event
 
 
-async def update_event(
-    db: AsyncSession, id: int, event_update: event_schema.EventCreate
+def update_event(
+    db: Session, id: int, event_update: event_schema.EventCreate
 ) -> event_model.Event:
     tags = event_update.tags
     sql = select(event_model.Event).filter(event_model.Event.id == id)
-    result: Result = await db.execute(sql)
+    result: Result = db.execute(sql)
     event = result.scalar_one()
-    await tag_crud.create_event_tags(db, event_update, tags)
+    tag_crud.create_event_tags(db, event_update, tags)
     tmp = event_update.model_dump(exclude={"tags"})
     for key, value in tmp.items():
         setattr(event, key, value)
-    await db.commit()
-    await db.refresh(event)
+    db.commit()
+
     return event
 
 
-async def get_event(db: AsyncSession, id: int) -> event_model.Event:
-    sql = (
-        select(
-            event_model.Event,
-            event_model.EventReview,
-            event_model.EventTime,
-            event_model.EventTag,
-        )
-        .filter(event_model.Event.id == id)
-        .join(event_model.EventReview)
-        .join(event_model.EventTime)
-        .join(event_model.EventTag)
-    )
-    result: Result = await db.execute(sql)
-    return result.scalar_one()
+def get_event(db: Session, id: int, user_id: int) -> event_model.Event:
+    event = db.query(event_model.Event).filter(event_model.Event.id == id).first()
+    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    event.watched_users.append(user)
+    db.commit()
+    return event
 
 
-async def delete_event(db: AsyncSession, id: int) -> bool:
-    sql = select(event_model.Event).filter(event_model.Event.id == id)
-    result: Result = await db.execute(sql)
-    event = result.scalar_one()
+def delete_event(db: Session, id: int) -> bool:
+    event = db.query(event_model.Event).filter(event_model.Event.id == id).first()
     db.delete(event)
-    await db.commit()
+    db.commit()
     return True
 
 
-async def get_event_from_tag(
-    db: AsyncSession, tag_name: str, sort: str = "id", order: str = "asc"
-) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    tag = await tag_crud.get_tag_from_name(db, tag_name)
-    sql = (
-        select(event_model.Event)
-        .filter(event_model.Event.tags.any(tag))
-        .order_by(sort_column if order == "asc" else sort_column.desc())
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+def get_event_from_tag(db: Session, tag_name: str) -> list[event_model.Event]:
+    tag = tag_crud.get_tag_from_name(db, tag_name)
+    return tag.events
 
 
 # 開催時期が3日以内のイベントを取得
-async def get_recent_events(db: AsyncSession) -> list[event_model.Event]:
-    sql = select(event_model.Event).filter(
-        event_model.Event.status == "1",
-        event_model.Event.event_times.any(
-            event_model.EventTime.start_time
-            > datetime.datetime.now() - datetime.timedelta(days=3)
-        ),
+def get_recent_events(db: Session) -> list[event_model.Event]:
+    events = (
+        db.query(event_model.Event)
+        .filter(
+            event_model.Event.start_date
+            <= datetime.date.today() + datetime.timedelta(days=3)
+        )
+        .filter(event_model.Event.status == "1")
+        .all()
     )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+    return events
 
 
-async def search_events(
-    db: AsyncSession,
+def search_events(
+    db: Session,
     keyword: str = "",
-    sort: str = "id",
-    order: str = "asc",
 ) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    sql = (
-        select(event_model.Event)
+    events = (
+        db.query(event_model.Event)
         .filter(
             or_(
                 event_model.Event.title.like(f"%{keyword}%"),
                 event_model.Event.description.like(f"%{keyword}%"),
-            ),
+            )
         )
-        .order_by(sort_column if order == "asc" else sort_column.desc())
+        .filter(event_model.Event.status == "1")
+        .all()
     )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+    return events
 
 
-async def get_events(
-    db: AsyncSession, sort: str = "id", order: str = "asc"
-) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    sql = select(event_model.Event).order_by(
-        sort_column if order == "asc" else sort_column.desc()
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+def get_events(db: Session) -> list[event_model.Event]:
+    return db.query(event_model.Event).filter(event_model.Event.status == "1").all()
