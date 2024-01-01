@@ -35,8 +35,6 @@ class BaseModel(Base):
     def __tablename__(cls):
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower() + "s"
 
-    id = Column(Integer, primary_key=True)
-
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
