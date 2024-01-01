@@ -63,3 +63,27 @@ def get_current_active_user(
     if not current_user.is_active and settings.IS_PRODUCT:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+def get_general_user(
+    current_user: user_model.User = Depends(get_current_active_user),
+):
+    if current_user.user_type in ["a", "g"]:
+        return current_user
+    raise HTTPException(status_code=400, detail="General user only")
+
+
+def get_company_user(
+    current_user: user_model.User = Depends(get_current_active_user),
+):
+    if current_user.user_type in ["a", "c"]:
+        return current_user
+    raise HTTPException(status_code=400, detail="Company user only")
+
+
+def get_admin_user(
+    current_user: user_model.User = Depends(get_current_active_user),
+):
+    if current_user.user_type == "a":
+        return current_user
+    raise HTTPException(status_code=400, detail="Admin user only")
