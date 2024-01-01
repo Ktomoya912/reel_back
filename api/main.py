@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import auth, event, notice, user
+from api.routers import auth, event, notice, tag, user
 
 
 class NoEnvironmentError(Exception):
@@ -40,6 +40,7 @@ def create_app():
     app.include_router(user.router)
     app.include_router(notice.router)
     app.include_router(event.router)
+    app.include_router(tag.router)
 
     @app.get("/hello")
     def hello():
