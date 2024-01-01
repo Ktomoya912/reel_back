@@ -1,24 +1,18 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
 class TagBase(BaseModel):
-    name: str
+    name: str = Field(
+        ...,
+        example="タグ名",
+        description="タグ名",
+        min_length=1,
+        max_length=20,
+    )
 
 
 class Tag(TagBase):
     id: int
-    jobs: Optional[list] = Field(
-        [],
-        example=[],
-        description="求人",
-    )
-    events: Optional[list] = Field(
-        [],
-        example=[],
-        description="イベント",
-    )
 
     class Config:
         orm_mode = True

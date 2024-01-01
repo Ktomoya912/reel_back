@@ -34,12 +34,9 @@ class JobBookmark(BaseModel):
 class JobWatched(BaseModel):
     __tablename__ = "job_watched"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    job_id = Column(Integer, ForeignKey("jobs.id"))
-
-    user = relationship("User", back_populates="job_watched")
-    job = relationship("Job", back_populates="watched_users")
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
+    count = Column(Integer, default=1)
 
 
 class Job(BaseModel):
@@ -61,4 +58,8 @@ class Job(BaseModel):
         "User", secondary="job_bookmarks", back_populates="job_bookmarks"
     )
     applications = relationship("Application", back_populates="job")
-    watched_users = relationship("JobWatched", back_populates="job")
+    watched_users = relationship(
+        "User",
+        back_populates="job_watched",
+        secondary="job_watched",
+    )

@@ -17,6 +17,8 @@ from api.modules.email import send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+TIME_DELTA = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+TIME_DELTA2 = timedelta(days=30)
 
 
 @router.post("/token", response_model=user_schema.Token)
@@ -29,10 +31,10 @@ def login_for_access_token(
     user = user_crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    if not user.is_active and settings.IS_PRODUCT:
-        # メールでの認証が完了していない場合
-        raise HTTPException(status_code=410, detail="Inactive user")
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # if not user.is_active and settings.IS_PRODUCT:
+    #     # メールでの認証が完了していない場合
+    #     raise HTTPException(status_code=410, detail="Inactive user")
+    access_token_expires = TIME_DELTA2
     access_token = user_crud.create_access_token(
         secret_key=settings.SECRET_KEY,
         data={"sub": user.username},
