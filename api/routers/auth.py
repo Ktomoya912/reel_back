@@ -9,8 +9,7 @@ from jinja2 import Template
 from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
-import api.schemas.user as user_schema
-from api import config
+from api import config, schemas
 from api.dependencies import get_config, get_current_user, get_db
 from api.modules.email import send_email
 
@@ -20,7 +19,7 @@ TIME_DELTA = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 TIME_DELTA2 = timedelta(days=30)
 
 
-@router.post("/token", response_model=user_schema.Token)
+@router.post("/token", response_model=schemas.Token)
 def login_for_access_token(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     form_data: OAuth2PasswordRequestForm = Depends(),

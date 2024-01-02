@@ -2,14 +2,14 @@ from typing import Literal
 
 from sqlalchemy.orm.session import Session
 
-import api.models.message as message_model
-import api.schemas.message as message_schema
+
+from api import models, schemas
 
 
 def create_message(
-    db: Session, message_create: message_schema.MessageCreate
-) -> message_model.Message:
-    message = message_model.Message(**message_create.model_dump(exclude={"user_list"}))
+    db: Session, message_create: schemas.MessageCreate
+) -> models.Message:
+    message = models.Message(**message_create.model_dump(exclude={"user_list"}))
     db.add(message)
     db.commit()
     return message
@@ -17,10 +17,10 @@ def create_message(
 
 def send_message(
     db: Session, user_list: list[int], message_id: int
-) -> list[message_model.MessageBox]:
+) -> list[models.MessageBox]:
     message_box_list = []
     for user_id in user_list:
-        message_box = message_model.MessageBox(user_id=user_id, message_id=message_id)
+        message_box = models.MessageBox(user_id=user_id, message_id=message_id)
         db.add(message_box)
         message_box_list.append(message_box)
     db.commit()
@@ -29,31 +29,27 @@ def send_message(
 
 def get_messages(
     db: Session, user_id: int, type: Literal["J", "E"]
-) -> list[message_model.Message]:
+) -> list[models.Message]:
     messages = (
-        db.query(message_model.Message)
-        .join(message_model.MessageBox)
-        .filter(message_model.MessageBox.user_id == user_id)
-        .filter(message_model.Message.type == type)
+        db.query(models.Message)
+        .join(models.MessageBox)
+        .filter(models.MessageBox.user_id == user_id)
+        .filter(models.Message.type == type)
         .all()
     )
     return messages
 
 
-def get_message(db: Session, message_id: int) -> message_model.Message:
-    message = db.query(message_model.Message).filter(
-        message_model.Message.id == message_id
-    )
+def get_message(db: Session, message_id: int) -> models.Message:
+    message = db.query(models.Message).filter(models.Message.id == message_id)
     return message
 
 
-def read_message(
-    db: Session, message_id: int, user_id: int
-) -> message_model.MessageBox:
+def read_message(db: Session, message_id: int, user_id: int) -> models.MessageBox:
     message_box = (
-        db.query(message_model.MessageBox)
-        .filter(message_model.MessageBox.message_id == message_id)
-        .filter(message_model.MessageBox.user_id == user_id)
+        db.query(models.MessageBox)
+        .filter(models.MessageBox.message_id == message_id)
+        .filter(models.MessageBox.user_id == user_id)
         .first()
     )
     message_box.is_read = True

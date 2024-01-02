@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import auth, event, notice, tag, user
+from api import routers
 from api.db import Session
 
 
@@ -47,11 +47,7 @@ def create_app():
             request.state.db.close()
         return response
 
-    app.include_router(auth.router)
-    app.include_router(user.router)
-    app.include_router(notice.router)
-    app.include_router(event.router)
-    app.include_router(tag.router)
+    app.include_router(routers.router)
 
     @app.get("/hello")
     def hello():

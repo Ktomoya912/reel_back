@@ -5,9 +5,8 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm.session import Session
 
-import api.models.company as company_model
-import api.models.user as user_model
-import api.schemas.user as user_schema
+from api import models
+from api import schemas
 
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -20,7 +19,7 @@ def verify_password(plain_password, hashed_password) -> bool:
 
 def authenticate_user(
     db: Session, username: str, password: str
-) -> Union[bool, user_model.User]:
+) -> Union[bool, models.User]:
     """ユーザーの認証"""
     user = get_user_by_username(db, username)
     if not user:
@@ -45,11 +44,11 @@ def create_access_token(
 
 
 def create_company(
-    db: Session, company_create: user_schema.CompanyCreate
-) -> company_model.Company:
+    db: Session, company_create: schemas.CompanyCreate
+) -> models.Company:
     """会社の作成"""
     tmp = company_create.model_dump()
-    company = company_model.Company(**tmp)
+    company = models.Company(**tmp)
     db.add(company)
     db.commit()
 
@@ -57,69 +56,65 @@ def create_company(
 
 
 def create_user_company(
-    db: Session, user_create: user_schema.UserCreateCompany
-) -> user_model.User:
+    db: Session, user_create: schemas.UserCreateCompany
+) -> models.User:
     """ユーザーと会社の作成"""
     tmp = user_create.model_dump()
     company = create_company(db, user_create.company)
     tmp["company"] = company
-    user = user_model.User(**tmp)
+    user = models.User(**tmp)
     db.add(user)
     db.commit()
     return user
 
 
-def create_user(db: Session, user_create: user_schema.UserCreate) -> user_model.User:
+def create_user(db: Session, user_create: schemas.UserCreate) -> models.User:
     """ユーザーの作成"""
     tmp = user_create.model_dump()
-    user = user_model.User(**tmp)
+    user = models.User(**tmp)
     db.add(user)
     db.commit()
     return user
 
 
-def get_users(db: Session) -> list[user_model.User]:
+def get_users(db: Session) -> list[models.User]:
     """ユーザー一覧の取得"""
-    users = db.query(user_model.User).all()
+    users = db.query(models.User).all()
     return users
 
 
-def get_user_by_username(db: Session, username: str) -> Optional[user_model.User]:
+def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
     """ユーザー名からユーザー情報を取得"""
-    user = (
-        db.query(user_model.User).filter(user_model.User.username == username).first()
-    )
+    user = db.query(models.User).filter(models.User.username == username).first()
     return user
 
 
-def get_user_by_email(db: Session, email: str) -> Optional[user_model.User]:
+def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     """メールアドレスからユーザー情報を取得"""
-    user = db.query(user_model.User).filter(user_model.User.email == email).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     return user
 
 
-def get_user(db: Session, user_id: int) -> Optional[user_model.User]:
+def get_user(db: Session, user_id: int) -> Optional[models.User]:
     """idからユーザー情報を取得"""
-    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     return user
 
 
 def update_user(
-    db: Session, user_create: user_schema.UserCreate, original: user_model.User
-) -> user_model.User:
+    db: Session, user_create: schemas.UserCreate, original: models.User
+) -> models.User:
     original.username = user_create.username
     db.commit()
     return original
 
 
-def update_user_password(
-    db: Session, user: user_model.User, password: str
-) -> user_model.User:
+def update_user_password(db: Session, user: models.User, password: str) -> models.User:
     user.password = password
     db.commit()
     return user
 
 
-def delete_user(db: Session, user: user_model.User) -> None:
+def delete_user(db: Session, user: models.User) -> None:
     db.delete(user)
     db.commit()

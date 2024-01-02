@@ -19,6 +19,11 @@ class MockUser(BaseModel):
 
 
 @pytest.fixture
+def api_path():
+    return "/api/v1"
+
+
+@pytest.fixture
 def client():
     app = create_app()
     engine = create_engine(

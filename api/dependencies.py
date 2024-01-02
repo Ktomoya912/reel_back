@@ -7,8 +7,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
-import api.models.user as user_model
-import api.schemas.user as user_schema
+from api import models, schemas
 from api import config
 from api.db import Session
 
@@ -41,7 +40,7 @@ def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
     settings: config.BaseConfig = Depends(get_config),
-) -> user_model.User:
+) -> models.User:
     """現在のユーザーの取得"""
     credentials_exception = HTTPException(
         status_code=401, detail="Could not validate credentials"
@@ -51,7 +50,7 @@ def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = user_schema.TokenData(username=username)
+        token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
     user = user_crud.get_user_by_username(db, username=token_data.username)
@@ -62,15 +61,15 @@ def get_current_user(
 
 def get_current_active_user(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
-    current_user: user_model.User = Depends(get_current_user),
-) -> user_model.User:
+    current_user: models.User = Depends(get_current_user),
+) -> models.User:
     if not current_user.is_active and settings.IS_PRODUCT:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
 def get_general_user(
-    current_user: user_model.User = Depends(get_current_active_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     if current_user.user_type in ["a", "g"]:
         return current_user
@@ -78,7 +77,7 @@ def get_general_user(
 
 
 def get_company_user(
-    current_user: user_model.User = Depends(get_current_active_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     if current_user.user_type in ["a", "c"]:
         return current_user
@@ -86,7 +85,7 @@ def get_company_user(
 
 
 def get_admin_user(
-    current_user: user_model.User = Depends(get_current_active_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     if current_user.user_type == "a":
         return current_user

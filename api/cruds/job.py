@@ -6,16 +6,13 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import or_
 
 import api.cruds.tag as tag_crud
-import api.models.job as job_model
-import api.models.user as user_model
-import api.schemas.job as job_schema
+
+from api import models, schemas
 
 
-def create_job(
-    db: Session, job_create: job_schema.JobCreate, user_id: int
-) -> job_model.Job:
+def create_job(db: Session, job_create: schemas.JobCreate, user_id: int) -> models.Job:
     tmp = job_create.model_dump(exclude={"tags", "job_times"})
-    job = job_model.Job(**tmp, user_id=user_id)
+    job = models.Job(**tmp, user_id=user_id)
     db.add(job)
     db.commit()
     return job
@@ -23,21 +20,21 @@ def create_job(
 
 def create_job_times(
     db: Session,
-    job: job_model.Job,
-    job_times: list[job_schema.JobTimeCreate],
-) -> job_model.JobTime:
+    job: models.Job,
+    job_times: list[schemas.JobTimeCreate],
+) -> models.JobTime:
     for job_time in job_times:
         tmp = job_time.model_dump()
-        job_time = job_model.JobTime(**tmp)
+        job_time = models.JobTime(**tmp)
         job.job_times.append(job_time)
     db.commit()
 
     return job
 
 
-def update_job(db: Session, id: int, job_update: job_schema.JobCreate) -> job_model.Job:
+def update_job(db: Session, id: int, job_update: schemas.JobCreate) -> models.Job:
     tags = job_update.tags
-    sql = select(job_model.Job).filter(job_model.Job.id == id)
+    sql = select(models.Job).filter(models.Job.id == id)
     result: Result = db.execute(sql)
     job = result.scalar_one()
     tag_crud.create_job_tags(db, job_update, tags)
@@ -49,24 +46,24 @@ def update_job(db: Session, id: int, job_update: job_schema.JobCreate) -> job_mo
     return job
 
 
-def get_job(db: Session, id: int) -> job_model.Job:
-    job = db.query(job_model.Job).filter(job_model.Job.id == id).first()
+def get_job(db: Session, id: int) -> models.Job:
+    job = db.query(models.Job).filter(models.Job.id == id).first()
     return job
 
 
-def watch_job(db: Session, id: int, user_id: int) -> job_model.Job:
+def watch_job(db: Session, id: int, user_id: int) -> models.Job:
     job = get_job(db, id)
-    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     watched_users = (
-        db.query(job_model.JobWatched)
+        db.query(models.JobWatched)
         .filter(
-            job_model.JobWatched.user_id == user.id,
-            job_model.JobWatched.job_id == job.id,
+            models.JobWatched.user_id == user.id,
+            models.JobWatched.job_id == job.id,
         )
         .first()
     )
     if watched_users is None:
-        watched_users = job_model.JobWatched(user_id=user.id, job_id=job.id)
+        watched_users = models.JobWatched(user_id=user.id, job_id=job.id)
         db.add(watched_users)
     else:
         watched_users.count += 1
@@ -75,28 +72,28 @@ def watch_job(db: Session, id: int, user_id: int) -> job_model.Job:
 
 
 def delete_job(db: Session, id: int) -> bool:
-    job = db.query(job_model.Job).filter(job_model.Job.id == id).first()
+    job = db.query(models.Job).filter(models.Job.id == id).first()
     db.delete(job)
     db.commit()
     return True
 
 
-def get_job_from_tag(db: Session, tag_name: str) -> list[job_model.Job]:
+def get_job_from_tag(db: Session, tag_name: str) -> list[models.Job]:
     tag = tag_crud.get_tag_from_name(db, tag_name)
     return tag.jobs
 
 
 # 開催時期が3日以内のアルバイトを取得
-def get_recent_jobs(db: Session) -> list[job_model.Job]:
+def get_recent_jobs(db: Session) -> list[models.Job]:
     now = datetime.datetime.now()
     start_time = now + datetime.timedelta(days=3)
     jobs = (
-        db.query(job_model.Job)
-        .join(job_model.JobTime)
+        db.query(models.Job)
+        .join(models.JobTime)
         .filter(
-            job_model.JobTime.start_time >= now,
-            job_model.JobTime.start_time <= start_time,
-            job_model.Job.status == "1",
+            models.JobTime.start_time >= now,
+            models.JobTime.start_time <= start_time,
+            models.Job.status == "1",
         )
         .all()
     )
@@ -106,16 +103,16 @@ def get_recent_jobs(db: Session) -> list[job_model.Job]:
 def search_jobs(
     db: Session,
     keyword: str = "",
-) -> list[job_model.Job]:
+) -> list[models.Job]:
     jobs = (
-        db.query(job_model.Job)
+        db.query(models.Job)
         .filter(
             or_(
-                job_model.Job.name.contains(keyword),
-                job_model.Job.description.contains(keyword),
+                models.Job.name.contains(keyword),
+                models.Job.description.contains(keyword),
             )
         )
-        .filter(job_model.Job.status == "1")
+        .filter(models.Job.status == "1")
         .all()
     )
     return jobs
@@ -123,8 +120,8 @@ def search_jobs(
 
 def get_jobs(
     db: Session, only_active: bool = True, limit: int = 10, offset: int = 0
-) -> list[job_model.Job]:
-    result = db.query(job_model.Job)
+) -> list[models.Job]:
+    result = db.query(models.Job)
     if only_active:
-        result = result.filter(job_model.Job.status == "1")
+        result = result.filter(models.Job.status == "1")
     return result.limit(limit).offset(offset).all()

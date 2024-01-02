@@ -5,8 +5,8 @@ from sqlalchemy.orm.session import Session
 
 import api.cruds.event as event_crud
 import api.cruds.tag as tag_crud
-import api.schemas.event as event_schema
 from api.dependencies import get_company_user, get_current_active_user, get_db
+from api import schemas
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -21,10 +21,10 @@ def common_parameters(
     return {"db": db, "sort": sort, "order": order, "offset": offset, "limit": limit}
 
 
-@router.post("/", response_model=event_schema.EventListView)
+@router.post("/", response_model=schemas.EventListView)
 def create_event(
     current_user: Annotated[dict, Depends(get_company_user)],
-    event_create: event_schema.EventCreate,
+    event_create: schemas.EventCreate,
     db: Session = Depends(get_db),
 ):
     event = event_crud.create_event(db, event_create, current_user.id)
@@ -33,7 +33,7 @@ def create_event(
     return event
 
 
-@router.get("/", response_model=list[event_schema.EventListView])
+@router.get("/", response_model=list[schemas.EventListView])
 def get_events(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
@@ -52,7 +52,7 @@ def get_events(
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
 
 
-@router.get("/{event_id}", response_model=event_schema.Event)
+@router.get("/{event_id}", response_model=schemas.Event)
 def get_event(
     event_id: int,
     current_user: dict = Depends(get_current_active_user),
@@ -61,16 +61,16 @@ def get_event(
     return event_crud.watch_event(db, event_id, current_user.id)
 
 
-@router.put("/{event_id}", response_model=event_schema.Event)
+@router.put("/{event_id}", response_model=schemas.Event)
 def update_event(
     event_id: int,
-    event_update: event_schema.EventCreate,
+    event_update: schemas.EventCreate,
     db: Session = Depends(get_db),
 ):
     return event_crud.update_event(db, event_id, event_update)
 
 
-@router.put("/{event_id}/activate", response_model=event_schema.Event)
+@router.put("/{event_id}/activate", response_model=schemas.Event)
 def activate_event(
     event_id: int,
     db: Session = Depends(get_db),
@@ -89,12 +89,12 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     return {"message": "Failed to delete"}
 
 
-@router.get("/recent/", response_model=list[event_schema.EventListView])
+@router.get("/recent/", response_model=list[schemas.EventListView])
 def get_recent_events(db: Session = Depends(get_db)):
     return event_crud.get_recent_events(db)
 
 
-@router.get("/search/", response_model=list[event_schema.EventListView])
+@router.get("/search/", response_model=list[schemas.EventListView])
 def search_events(db: Session = Depends(get_db), keyword: str = ""):
     print(keyword)
     return event_crud.search_events(db, keyword)

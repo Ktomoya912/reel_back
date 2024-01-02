@@ -7,9 +7,9 @@ def test_main(client: TestClient):
     assert response.json() == {"message": "hello world!"}
 
 
-def test_create_and_read(client: TestClient):
+def test_create_and_read(client: TestClient, api_path: str):
     response = client.post(
-        "/users/",
+        f"{api_path}/users/",
         json={
             "username": "username",
             "password": "password",
