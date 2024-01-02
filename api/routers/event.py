@@ -1,19 +1,19 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm.session import Session
 
 import api.cruds.event as event_crud
 import api.cruds.tag as tag_crud
-from api.dependencies import get_company_user, get_current_active_user, get_db
 from api import schemas
+from api.dependencies import get_company_user, get_current_active_user, get_db
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 def common_parameters(
     db: Session = Depends(get_db),
-    sort: str = "id",
+    sort: Literal["review", "favorite", "recent", "id"] = "id",
     order: str = "asc",
     offset: int = 0,
     limit: int = 100,
@@ -48,6 +48,9 @@ def get_events(
         data = event_crud.get_events(
             common["db"],
             only_active=only_active,
+            sort=common["sort"],
+            skip=common["offset"],
+            limit=common["limit"],
         )
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
 

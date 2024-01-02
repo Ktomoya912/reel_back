@@ -3,10 +3,11 @@ import datetime
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql import or_
+from sqlalchemy.sql import func, or_
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
+from api.modules.common import get_jst_now
 
 
 def create_event(
@@ -88,7 +89,7 @@ def get_event_by_tag(db: Session, tag_name: str) -> list[models.Event]:
 
 # 開催時期が3日以内のイベントを取得
 def get_recent_events(db: Session) -> list[models.Event]:
-    now = datetime.datetime.now()
+    now = get_jst_now()
     start_time = now + datetime.timedelta(days=3)
     events = (
         db.query(models.Event)
@@ -121,7 +122,63 @@ def search_events(
     return events
 
 
-def get_events(db: Session, only_active: bool = True) -> list[models.Event]:
+def get_events(
+    db: Session,
+    only_active: bool = True,
+    sort: str = "new",
+    skip: int = 0,
+    limit: int = 100,
+):
+    query = db.query(models.Event)
     if only_active:
-        return db.query(models.Event).filter(models.Event.status == "1").all()
-    return db.query(models.Event).all()
+        query = db.query(models.Event).filter(models.Event.status == "1")
+    if sort == "id":
+        query = get_events_by_id(query)
+    elif sort == "review":
+        query = get_events_by_review(query)
+    elif sort == "watched":
+        query = get_events_by_watched(query)
+    elif sort == "favorite":
+        query = get_events_by_bookmark(query)
+    else:
+        query = get_events_by_recent(query)
+    return query.offset(skip).limit(limit).all()
+
+
+# Reviewの評価平均順にイベントを取得
+def get_events_by_review(query):
+    return (
+        query.outerjoin(models.EventReview)
+        .order_by(func.avg(models.EventReview.review_point).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def get_events_by_watched(query):
+    return (
+        query.join(models.EventWatched)
+        .order_by(func.sum(models.EventWatched.count).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def get_events_by_id(query):
+    return query.order_by(models.Event.id.desc())
+
+
+def get_events_by_recent(query):
+    now = get_jst_now()
+    # 現在日時と開催日時の差が小さい順にイベントを取得、開催日時が過ぎているものは除外
+    return (
+        query.join(models.EventTime)
+        .filter(models.EventTime.start_time >= now)
+        .order_by(models.EventTime.start_time)
+    )
+
+
+def get_events_by_bookmark(query):
+    return (
+        query.join(models.EventBookmark)
+        .order_by(func.sum(models.EventBookmark.count).desc())
+        .group_by(models.Event.id)
+    )
