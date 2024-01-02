@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import or_
-
+from api.modules.common import get_jst_now
 import api.cruds.tag as tag_crud
 
 from api import models, schemas
@@ -85,7 +85,7 @@ def get_job_by_tag(db: Session, tag_name: str) -> list[models.Job]:
 
 # 開催時期が3日以内のアルバイトを取得
 def get_recent_jobs(db: Session) -> list[models.Job]:
-    now = datetime.datetime.now()
+    now = get_jst_now()
     start_time = now + datetime.timedelta(days=3)
     jobs = (
         db.query(models.Job)

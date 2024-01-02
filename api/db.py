@@ -1,11 +1,12 @@
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Column, DateTime, Integer, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, sessionmaker
+from api.modules.common import get_jst_now
 
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
@@ -35,8 +36,8 @@ class BaseModel(Base):
     def __tablename__(cls):
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower() + "s"
 
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=get_jst_now)
+    updated_at = Column(DateTime, default=get_jst_now, onupdate=get_jst_now)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(id={self.id})>"

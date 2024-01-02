@@ -4,7 +4,7 @@ from typing import Optional, Union
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm.session import Session
-
+from api.modules.common import get_jst_now
 from api import models
 from api import schemas
 
@@ -35,9 +35,9 @@ def create_access_token(
     """アクセストークンの生成"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = get_jst_now() + expires_delta
     else:
-        expire = datetime.now() + timedelta(days=30)
+        expire = get_jst_now() + timedelta(days=30)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
     return encoded_jwt

@@ -1,14 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 import api.schemas.tag as tag_schema
+from api.modules.common import get_jst_now
+
+sample_date = get_jst_now() + timedelta(days=1)
+start_time = sample_date.strftime("%Y-%m-%d %H:%M:%S")
+end_time = (sample_date + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class EventTimeBase(BaseModel):
-    start_time: datetime = Field(..., example="2023-12-31 23:59:59", description="開始日時")
-    end_time: datetime = Field(..., example="2023-12-31 23:59:59", description="終了日時")
+    start_time: datetime = Field(..., example=start_time, description="開始日時")
+    end_time: datetime = Field(..., example=end_time, description="終了日時")
 
 
 class EventTimeCreate(EventTimeBase):
@@ -69,6 +74,8 @@ class EventBase(BaseModel):
 
 class EventListView(EventBase):
     id: int = Field(..., example=1, description="イベントID")
+    status: Optional[str] = Field(..., example="1", description="イベントステータス")
+    event_times: List[EventTime]
 
 
 class EventCreate(EventBase):
@@ -137,18 +144,8 @@ class EventCreate(EventBase):
         description="説明",
         max_length=1000,
     )
-    tags: Optional[List[tag_schema.TagCreate]] = Field(
-        ...,
-        example=[{"name": "タグ名"}],
-        description="タグ",
-    )
-    event_times: List[EventTimeCreate] = Field(
-        ...,
-        example=[
-            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
-        ],
-        description="イベント時間",
-    )
+    tags: Optional[List[tag_schema.TagCreate]]
+    event_times: List[EventTimeCreate]
 
     class Config:
         orm_mode = True
@@ -156,23 +153,9 @@ class EventCreate(EventBase):
 
 class Event(EventCreate, EventListView):
     # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
-    tags: Optional[List[tag_schema.Tag]] = Field(
-        [],
-        example=[],
-        description="タグ",
-    )
-    event_times: List[EventTime] = Field(
-        [],
-        example=[
-            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
-        ],
-        description="イベント時間",
-    )
-    reviews: Optional[List[EventReview]] = Field(
-        [],
-        example=[],
-        description="レビュー",
-    )
+    tags: Optional[List[tag_schema.Tag]]
+    event_times: List[EventTime]
+    reviews: Optional[List[EventReview]]
 
 
 class BaseImpression(BaseModel):
