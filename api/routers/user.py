@@ -23,6 +23,10 @@ def create_user(
     user_body: schemas.UserCreate,
     db: Session = Depends(get_db),
 ):
+    if user_crud.get_user_by_email(db, user_body.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if user_crud.get_user_by_username(db, user_body.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user(db, user_body)
     if settings.IS_PRODUCT:
         auth_router.send_verification_email(
@@ -39,6 +43,10 @@ def create_user_company(
     user_body: schemas.UserCreateCompany,
     db: Session = Depends(get_db),
 ):
+    if user_crud.get_user_by_email(db, user_body.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if user_crud.get_user_by_username(db, user_body.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user_company(db, user_body)
     if settings.IS_PRODUCT:
         auth_router.send_verification_email(
@@ -84,6 +92,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/send-mail-to-admin", response_model=None)
 def send_mail_to_admin(
+    background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     mail_body: schemas.MailBody,
 ):
@@ -91,7 +100,8 @@ def send_mail_to_admin(
     html_file = Path(__file__).parent.parent / "templates" / "mail-to-admin.html"
     html = Template(html_file.read_text())
     to_list = [settings.MAIL_SENDER, mail_body.email]
-    send_email(
+    background_tasks.add_task(
+        send_email,
         settings.MAIL_SENDER,
         to_list,
         f"お問い合わせ: {mail_body.subject}",

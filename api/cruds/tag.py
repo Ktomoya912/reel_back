@@ -14,7 +14,7 @@ def create_tag(db: Session, tag: schemas.TagCreate) -> models.Tag:
     return tag
 
 
-def get_tag_from_name(db: Session, tag_name: str) -> models.Tag:
+def get_tag_by_name(db: Session, tag_name: str) -> models.Tag:
     tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
     return tag
 
@@ -28,7 +28,7 @@ def create_event_tags(
 ) -> models.Event:
     event.tags = []
     for tag in tags:
-        models = get_tag_from_name(db, tag.name)
+        models = get_tag_by_name(db, tag.name)
         if models is None:
             models = create_tag(db, tag)
         try:

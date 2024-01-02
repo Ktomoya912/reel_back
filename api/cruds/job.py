@@ -78,8 +78,8 @@ def delete_job(db: Session, id: int) -> bool:
     return True
 
 
-def get_job_from_tag(db: Session, tag_name: str) -> list[models.Job]:
-    tag = tag_crud.get_tag_from_name(db, tag_name)
+def get_job_by_tag(db: Session, tag_name: str) -> list[models.Job]:
+    tag = tag_crud.get_tag_by_name(db, tag_name)
     return tag.jobs
 
 

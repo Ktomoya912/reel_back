@@ -40,7 +40,7 @@ def get_events(
     only_active: bool = False,
 ):
     if tag:
-        data = event_crud.get_event_from_tag(
+        data = event_crud.get_event_by_tag(
             common["db"],
             tag,
         )

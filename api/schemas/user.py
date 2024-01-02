@@ -72,7 +72,23 @@ class MailBody(BaseModel):
         orm_mode = True
 
 
-class UserBase(BaseModel):
+class UserPasswordChange(BaseModel):
+    password: str = Field(
+        ...,
+        example="password",
+        description="パスワード",
+        min_length=8,
+    )
+
+    @field_serializer("password")
+    def password_hash(self, v: str):
+        return pwd_context.hash(v)
+
+    class Config:
+        orm_mode = True
+
+
+class UserBase(UserPasswordChange):
     username: str = Field(
         ...,
         example="username",
@@ -80,12 +96,6 @@ class UserBase(BaseModel):
         min_length=4,
         max_length=16,
         pattern=r"[\w\-._]+",
-    )
-    password: str = Field(
-        ...,
-        example="password",
-        description="パスワード",
-        min_length=8,
     )
     email: str = Field(
         ...,
@@ -107,18 +117,11 @@ class UserBase(BaseModel):
         pattern=r"[gca]",
     )
 
-    @field_serializer("password")
-    def password_hash(self, v: str):
-        return pwd_context.hash(v)
-
 
 class User(UserBase):
     id: int
     company: Optional["Company"]
     is_active: bool
-
-    class Config:
-        orm_mode = True
 
 
 class UserCreate(UserBase):
@@ -137,6 +140,3 @@ class UserCreateCompany(UserCreate):
 
 class UserCreateResponse(UserCreate):
     id: int
-
-    class Config:
-        orm_mode = True

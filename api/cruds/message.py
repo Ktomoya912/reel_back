@@ -28,20 +28,21 @@ def send_message(
 
 
 def get_messages(
-    db: Session, user_id: int, type: Literal["J", "E"]
+    db: Session, user_id: int, type: Literal["J", "E"], not_read_only: bool = True
 ) -> list[models.Message]:
     messages = (
         db.query(models.Message)
         .join(models.MessageBox)
         .filter(models.MessageBox.user_id == user_id)
         .filter(models.Message.type == type)
-        .all()
     )
-    return messages
+    if not_read_only:
+        messages = messages.filter(models.MessageBox.is_read == False)  # noqa
+    return messages.all()
 
 
 def get_message(db: Session, message_id: int) -> models.Message:
-    message = db.query(models.Message).filter(models.Message.id == message_id)
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
     return message
 
 

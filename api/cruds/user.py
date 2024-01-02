@@ -109,8 +109,10 @@ def update_user(
     return original
 
 
-def update_user_password(db: Session, user: models.User, password: str) -> models.User:
-    user.password = password
+def update_user_password(
+    db: Session, user: models.User, new_password: schemas.UserPasswordChange
+) -> models.User:
+    user.password = pwd_context.hash(new_password.password)
     db.commit()
     return user
 

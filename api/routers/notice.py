@@ -33,12 +33,12 @@ def create_notification(
     return message
 
 
-@router.post("/{message_id}/read")
+@router.post("/{message_id}/read", response_model=schemas.Message)
 def read_notification(
     message_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-) -> schemas.Message:
+):
     message_crud.read_message(db, message_id, current_user.id)
     message = message_crud.get_message(db, message_id)
     return message

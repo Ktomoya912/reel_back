@@ -99,6 +99,7 @@ def email_confirmation(
 
 @router.post("/forgot-password")
 def forgot_password(
+    background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     email: str,
     db: Session = Depends(get_db),
@@ -114,7 +115,8 @@ def forgot_password(
     )
     html_file = Path(__file__).parent.parent / "templates" / "reset-password.html"
     html = Template(html_file.read_text())
-    send_email(
+    background_tasks.add_task(
+        send_email,
         from_=settings.MAIL_SENDER,
         to=email,
         subject="Reset your password",
@@ -145,9 +147,13 @@ def reset_password_form(token: str) -> str:
 
 @router.post("/reset-password/{token}")
 def reset_password(
-    token: str, new_password: str = Form(), db: Session = Depends(get_db)
+    settings: Annotated[config.BaseConfig, Depends(get_config)],
+    token: str,
+    new_password: str = Form(),
+    db: Session = Depends(get_db),
 ) -> None:
     """パスワードリセット"""
-    user = get_current_user(db, token)
-    user_crud.update_user_password(db, user, new_password)
+    user = get_current_user(db, token, settings=settings)
+    schema_user = schemas.UserPasswordChange(password=new_password)
+    user_crud.update_user_password(db, user, schema_user)
     return "Password updated successfully"

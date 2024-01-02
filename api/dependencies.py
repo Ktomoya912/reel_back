@@ -14,7 +14,7 @@ from api.db import Session
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 
 @lru_cache

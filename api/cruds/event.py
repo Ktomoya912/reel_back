@@ -81,8 +81,8 @@ def delete_event(db: Session, id: int) -> bool:
     return True
 
 
-def get_event_from_tag(db: Session, tag_name: str) -> list[models.Event]:
-    tag = tag_crud.get_tag_from_name(db, tag_name)
+def get_event_by_tag(db: Session, tag_name: str) -> list[models.Event]:
+    tag = tag_crud.get_tag_by_name(db, tag_name)
     return tag.events
 
 
