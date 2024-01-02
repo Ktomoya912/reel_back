@@ -6,8 +6,7 @@ from sqlalchemy.orm.session import Session
 import api.cruds.event as event_crud
 import api.cruds.tag as tag_crud
 import api.schemas.event as event_schema
-from api.db import get_db
-from api.dependencies import get_company_user, get_current_active_user
+from api.dependencies import get_company_user, get_current_active_user, get_db
 
 router = APIRouter(prefix="/events", tags=["events"])
 

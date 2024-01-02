@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm.session import Session
@@ -10,7 +10,7 @@ import api.cruds.user as user_crud
 import api.models.user as user_model
 import api.schemas.user as user_schema
 from api import config
-from api.db import get_db
+from api.db import Session
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALGORITHM = "HS256"
@@ -31,6 +31,10 @@ def get_develop_config():
 @lru_cache
 def get_test_config():
     return config.TestConfig()
+
+
+def get_db(request: Request) -> Session:
+    return request.state.db
 
 
 def get_current_user(

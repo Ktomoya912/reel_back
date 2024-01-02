@@ -9,10 +9,9 @@ import api.cruds.user as user_crud
 import api.routers.auth as auth_router
 import api.schemas.user as user_schema
 from api import config
-from api.db import get_db
 from api.modules.email import send_email
 
-from ..dependencies import get_config, get_current_user
+from ..dependencies import get_config, get_current_user, get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -3,7 +3,8 @@ from sqlalchemy.orm.session import Session
 
 import api.cruds.tag as tag_crud
 import api.schemas.tag as tag_schema
-from api.db import get_db
+
+from api.dependencies import get_db
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 

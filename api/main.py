@@ -1,13 +1,13 @@
 import os
-import re
 import secrets
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import auth, event, notice, tag, user
+from api.db import Session
 
 
 class NoEnvironmentError(Exception):
@@ -36,6 +36,17 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def db_session_middleware(request: Request, call_next):
+        response = Response("Internal server error", status_code=500)
+        try:
+            request.state.db = Session()
+            response = await call_next(request)
+        finally:
+            request.state.db.close()
+        return response
+
     app.include_router(auth.router)
     app.include_router(user.router)
     app.include_router(notice.router)

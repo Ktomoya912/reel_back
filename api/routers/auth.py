@@ -11,8 +11,7 @@ from sqlalchemy.orm.session import Session
 import api.cruds.user as user_crud
 import api.schemas.user as user_schema
 from api import config
-from api.db import get_db
-from api.dependencies import get_config, get_current_user
+from api.dependencies import get_config, get_current_user, get_db
 from api.modules.email import send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
