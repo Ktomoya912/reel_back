@@ -23,7 +23,6 @@ def client():
     app = create_app()
     engine = create_engine(
         TEST_DB_URL,
-        echo=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -32,8 +31,10 @@ def client():
 
     def get_test_db():
         session = Session()
-        yield session
-        session.close()
+        try:
+            yield session
+        finally:
+            session.close()
 
     app.dependency_overrides[get_db] = get_test_db
     app.dependency_overrides[get_config] = get_test_config

@@ -2,66 +2,129 @@ import datetime
 
 from sqlalchemy import select
 from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import or_
 
+import api.cruds.tag as tag_crud
 import api.models.job as job_model
+import api.models.user as user_model
 import api.schemas.job as job_schema
 
 
-async def create_job(
-    db: AsyncSession, job_create: job_schema.JobCreate
+def create_job(
+    db: Session, job_create: job_schema.JobCreate, user_id: int
 ) -> job_model.Job:
-    tmp = job_create.model_dump()
-    job = job_model.Job(**tmp)
+    tmp = job_create.model_dump(exclude={"tags", "job_times"})
+    job = job_model.Job(**tmp, user_id=user_id)
     db.add(job)
-    await db.commit()
-    await db.refresh(job)
+    db.commit()
     return job
 
 
-async def get_job(db: AsyncSession, id: int) -> job_model.Job:
+def create_job_times(
+    db: Session,
+    job: job_model.Job,
+    job_times: list[job_schema.JobTimeCreate],
+) -> job_model.JobTime:
+    for job_time in job_times:
+        tmp = job_time.model_dump()
+        job_time = job_model.JobTime(**tmp)
+        job.job_times.append(job_time)
+    db.commit()
+
+    return job
+
+
+def update_job(db: Session, id: int, job_update: job_schema.JobCreate) -> job_model.Job:
+    tags = job_update.tags
     sql = select(job_model.Job).filter(job_model.Job.id == id)
-    result: Result = await db.execute(sql)
-    return result.scalar_one()
+    result: Result = db.execute(sql)
+    job = result.scalar_one()
+    tag_crud.create_job_tags(db, job_update, tags)
+    tmp = job_update.model_dump(exclude={"tags"})
+    for key, value in tmp.items():
+        setattr(job, key, value)
+    db.commit()
+
+    return job
 
 
-# 開催時期が7日以内のイベントを取得
-async def get_recent_jobs(db: AsyncSession) -> list[job_model.Job]:
-    sql = select(job_model.Job).filter(
-        job_model.Job.status == "1",
-        job_model.Job.job_times.any(
-            job_model.JobTime.start_time
-            > datetime.datetime.now() - datetime.timedelta(days=7)
-        ),
+def get_job(db: Session, id: int) -> job_model.Job:
+    job = db.query(job_model.Job).filter(job_model.Job.id == id).first()
+    return job
+
+
+def watch_job(db: Session, id: int, user_id: int) -> job_model.Job:
+    job = get_job(db, id)
+    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    watched_users = (
+        db.query(job_model.JobWatched)
+        .filter(
+            job_model.JobWatched.user_id == user.id,
+            job_model.JobWatched.job_id == job.id,
+        )
+        .first()
     )
-    result: Result = await db.execute(sql)
-    return result.scalars()
+    if watched_users is None:
+        watched_users = job_model.JobWatched(user_id=user.id, job_id=job.id)
+        db.add(watched_users)
+    else:
+        watched_users.count += 1
+    db.commit()
+    return job
 
 
-async def search_jobs(
-    db: AsyncSession,
+def delete_job(db: Session, id: int) -> bool:
+    job = db.query(job_model.Job).filter(job_model.Job.id == id).first()
+    db.delete(job)
+    db.commit()
+    return True
+
+
+def get_job_from_tag(db: Session, tag_name: str) -> list[job_model.Job]:
+    tag = tag_crud.get_tag_from_name(db, tag_name)
+    return tag.jobs
+
+
+# 開催時期が3日以内のアルバイトを取得
+def get_recent_jobs(db: Session) -> list[job_model.Job]:
+    now = datetime.datetime.now()
+    start_time = now + datetime.timedelta(days=3)
+    jobs = (
+        db.query(job_model.Job)
+        .join(job_model.JobTime)
+        .filter(
+            job_model.JobTime.start_time >= now,
+            job_model.JobTime.start_time <= start_time,
+            job_model.Job.status == "1",
+        )
+        .all()
+    )
+    return jobs
+
+
+def search_jobs(
+    db: Session,
     keyword: str = "",
 ) -> list[job_model.Job]:
-    sql = select(job_model.Job).filter(
-        or_(
-            job_model.Job.title.like(f"%{keyword}%"),
-            job_model.Job.description.like(f"%{keyword}%"),
-        ),
+    jobs = (
+        db.query(job_model.Job)
+        .filter(
+            or_(
+                job_model.Job.name.contains(keyword),
+                job_model.Job.description.contains(keyword),
+            )
+        )
+        .filter(job_model.Job.status == "1")
+        .all()
     )
-    result: Result = await db.execute(sql)
-    return result.scalars()
+    return jobs
 
 
-async def get_jobs(
-    db: AsyncSession, sort: str = "id", order: str = "asc"
+def get_jobs(
+    db: Session, only_active: bool = True, limit: int = 10, offset: int = 0
 ) -> list[job_model.Job]:
-    try:
-        sort_column = getattr(job_model.Job, sort)
-    except AttributeError:
-        sort_column = job_model.Job.id
-    sql = select(job_model.Job).order_by(
-        sort_column if order == "asc" else sort_column.desc()
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars()
+    result = db.query(job_model.Job)
+    if only_active:
+        result = result.filter(job_model.Job.status == "1")
+    return result.limit(limit).offset(offset).all()
