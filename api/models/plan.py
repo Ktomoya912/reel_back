@@ -19,5 +19,5 @@ class Purchase(BaseModel):
     plan_id = Column(Integer, ForeignKey("plans.id"))
     is_paid = Column(Boolean, default=False)
 
-    user = relationship("User", back_populates="purchases")
-    plan = relationship("Plan", back_populates="users")
+    user = relationship("User", back_populates="purchases", uselist=False)
+    plan = relationship("Plan", back_populates="users", uselist=False)
