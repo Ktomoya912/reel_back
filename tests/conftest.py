@@ -1,13 +1,13 @@
 import pytest
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 from fastapi.testclient import TestClient
-from api.db import Base
-from api.dependencies import get_config, get_test_config, get_db, get_current_user
-from api.main import create_app
-from sqlalchemy.pool import StaticPool
 from pydantic import BaseModel
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from api.db import Base
+from api.dependencies import get_config, get_current_user, get_db, get_test_config
+from api.main import create_app
 
 TEST_DB_URL = "sqlite:///:memory:"
 

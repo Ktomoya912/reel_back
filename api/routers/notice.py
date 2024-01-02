@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm.session import Session
 
 import api.cruds.message as message_crud
-from api import schemas, models
+from api import models, schemas
+
 from ..dependencies import get_current_user, get_db
 
 router = APIRouter(prefix="/notices", tags=["notices"])

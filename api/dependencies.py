@@ -7,8 +7,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
-from api import models, schemas
-from api import config
+from api import config, models, schemas
 from api.db import Session
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30

@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm.session import Session
 
 import api.cruds.plan as plan_crud
-from api.dependencies import get_admin_user, get_db, get_company_user
 from api import schemas
+from api.dependencies import get_admin_user, get_company_user, get_db
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 

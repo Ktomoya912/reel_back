@@ -2,7 +2,6 @@ from typing import Literal
 
 from sqlalchemy.orm.session import Session
 
-
 from api import models, schemas
 
 

@@ -6,6 +6,7 @@ from sqlalchemy import Column, DateTime, Integer, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, sessionmaker
+
 from api.modules.common import get_jst_now
 
 DB_USER = os.getenv("DB_USER", "root")

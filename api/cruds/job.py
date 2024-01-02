@@ -4,10 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import or_
-from api.modules.common import get_jst_now
-import api.cruds.tag as tag_crud
 
+import api.cruds.tag as tag_crud
 from api import models, schemas
+from api.modules.common import get_jst_now
 
 
 def create_job(db: Session, job_create: schemas.JobCreate, user_id: int) -> models.Job:
