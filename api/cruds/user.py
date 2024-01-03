@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional, Union
 
 from jose import jwt
@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm.session import Session
 
 from api import models, schemas
-from api.modules.common import get_jst_now
+from api.utils import get_jst_now
 
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -51,7 +51,7 @@ def create_company(
     company = models.Company(**tmp)
     db.add(company)
     db.commit()
-
+    db.refresh(company)
     return company
 
 
@@ -65,6 +65,7 @@ def create_user_company(
     user = models.User(**tmp)
     db.add(user)
     db.commit()
+    db.refresh(user)
     return user
 
 
@@ -74,6 +75,7 @@ def create_user(db: Session, user_create: schemas.UserCreate) -> models.User:
     user = models.User(**tmp)
     db.add(user)
     db.commit()
+    db.refresh(user)
     return user
 
 
@@ -104,8 +106,11 @@ def get_user(db: Session, user_id: int) -> Optional[models.User]:
 def update_user(
     db: Session, user_create: schemas.UserCreate, original: models.User
 ) -> models.User:
-    original.username = user_create.username
+    update_data = user_create.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(original, key, value)
     db.commit()
+    db.refresh(original)
     return original
 
 
@@ -114,9 +119,11 @@ def update_user_password(
 ) -> models.User:
     user.password = pwd_context.hash(new_password.password)
     db.commit()
+    db.refresh(user)
     return user
 
 
-def delete_user(db: Session, user: models.User) -> None:
+def delete_user(db: Session, user: models.User) -> False:
     db.delete(user)
     db.commit()
+    return True

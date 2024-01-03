@@ -1,10 +1,23 @@
-from . import auth, user, event, tag, notice, plan
-from fastapi import APIRouter
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, UploadFile
+
+from ..dependencies import get_company_user
+from ..utils import get_jst_now
+from . import auth, event, notice, plan, tag, user
 
 router = APIRouter(prefix="/api/v1")
+
 router.include_router(auth.router)
 router.include_router(user.router)
 router.include_router(event.router)
 router.include_router(tag.router)
 router.include_router(notice.router)
 router.include_router(plan.router)
+
+
+@router.post("/upload-image")
+def upload_image(file: UploadFile = File(...), current_user=Depends(get_company_user)):
+    file_ext = Path(file.filename).suffix
+    file_name = f"{current_user.id}_{get_jst_now().strftime('%Y%m%d%H%M%S')}{file_ext}"
+    return {"filename": file_name}

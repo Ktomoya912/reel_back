@@ -9,6 +9,7 @@ def create_plan(db: Session, plan_create: schemas.PlanCreate) -> models.Plan:
     plan = models.Plan(**plan_create.model_dump())
     db.add(plan)
     db.commit()
+    db.refresh(plan)
     return plan
 
 
@@ -23,6 +24,7 @@ def update_plan(
     plan = db.query(models.Plan).get(plan_id)
     plan.update(**plan_update.model_dump())
     db.commit()
+    db.refresh(plan)
     return plan
 
 
@@ -40,6 +42,7 @@ def purchase_plan(
     purchase = models.Purchase(user=current_user, plan=plan)
     db.add(purchase)
     db.commit()
+    db.refresh(purchase)
     return purchase
 
 
@@ -85,4 +88,5 @@ def paid_checked(db: Session, purchase_id: int) -> Literal[True]:
     purchase = db.query(models.Purchase).get(purchase_id)
     purchase.is_paid = True
     db.commit()
+    db.refresh(purchase)
     return True

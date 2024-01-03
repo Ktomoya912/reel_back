@@ -10,7 +10,7 @@ def create_tag(db: Session, tag: schemas.TagCreate) -> models.Tag:
     tag = models.Tag(**tmp)
     db.add(tag)
     db.commit()
-
+    db.refresh(tag)
     return tag
 
 
@@ -37,5 +37,5 @@ def create_event_tags(
         except Exception:
             db.rollback()
     db.commit()
-
+    db.refresh(event)
     return event

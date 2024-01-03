@@ -81,7 +81,7 @@ def activate_event(
     event = event_crud.get_event(db, event_id)
     event.status = "1"
     db.commit()
-
+    db.refresh(event)
     return event
 
 

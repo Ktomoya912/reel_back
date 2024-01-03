@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 import api.schemas.tag as tag_schema
-from api.modules.common import get_jst_now
+from api.utils import get_jst_now
 
 sample_date = get_jst_now() + timedelta(days=1)
 start_time = sample_date.strftime("%Y-%m-%d %H:%M:%S")

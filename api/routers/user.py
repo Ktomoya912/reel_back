@@ -8,7 +8,7 @@ from sqlalchemy.orm.session import Session
 import api.cruds.user as user_crud
 import api.routers.auth as auth_router
 from api import config, schemas
-from api.modules.email import send_email
+from api.utils import send_email
 
 from ..dependencies import get_config, get_current_user, get_db
 

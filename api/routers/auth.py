@@ -11,7 +11,7 @@ from sqlalchemy.orm.session import Session
 import api.cruds.user as user_crud
 from api import config, schemas
 from api.dependencies import get_config, get_current_user, get_db
-from api.modules.email import send_email
+from api.utils import send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -85,6 +85,7 @@ def email_confirmation(
     user = get_current_user(settings=settings, db=db, token=token)
     user.is_active = True
     db.commit()
+    db.refresh(user)
     return f"""
     <html>
         <head></head>

@@ -7,7 +7,7 @@ from sqlalchemy.sql import or_
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
-from api.modules.common import get_jst_now
+from api.utils import get_jst_now
 
 
 def create_job(db: Session, job_create: schemas.JobCreate, user_id: int) -> models.Job:
@@ -15,6 +15,7 @@ def create_job(db: Session, job_create: schemas.JobCreate, user_id: int) -> mode
     job = models.Job(**tmp, user_id=user_id)
     db.add(job)
     db.commit()
+    db.refresh(job)
     return job
 
 
@@ -28,7 +29,7 @@ def create_job_times(
         job_time = models.JobTime(**tmp)
         job.job_times.append(job_time)
     db.commit()
-
+    db.refresh(job)
     return job
 
 
@@ -42,7 +43,7 @@ def update_job(db: Session, id: int, job_update: schemas.JobCreate) -> models.Jo
     for key, value in tmp.items():
         setattr(job, key, value)
     db.commit()
-
+    db.refresh(job)
     return job
 
 
@@ -68,6 +69,7 @@ def watch_job(db: Session, id: int, user_id: int) -> models.Job:
     else:
         watched_users.count += 1
     db.commit()
+    db.refresh(job)
     return job
 
 

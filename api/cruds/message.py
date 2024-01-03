@@ -11,6 +11,7 @@ def create_message(
     message = models.Message(**message_create.model_dump(exclude={"user_list"}))
     db.add(message)
     db.commit()
+    db.refresh(message)
     return message
 
 
@@ -23,6 +24,7 @@ def send_message(
         db.add(message_box)
         message_box_list.append(message_box)
     db.commit()
+    db.refresh(message_box)
     return message_box_list
 
 
@@ -54,4 +56,5 @@ def read_message(db: Session, message_id: int, user_id: int) -> models.MessageBo
     )
     message_box.is_read = True
     db.commit()
+    db.refresh(message_box)
     return message_box

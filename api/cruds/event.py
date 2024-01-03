@@ -7,7 +7,7 @@ from sqlalchemy.sql import func, or_
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
-from api.modules.common import get_jst_now
+from api.utils import get_jst_now
 
 
 def create_event(
@@ -17,6 +17,7 @@ def create_event(
     event = models.Event(**tmp, user_id=user_id)
     db.add(event)
     db.commit()
+    db.refresh(event)
     return event
 
 
@@ -30,7 +31,7 @@ def create_event_times(
         event_time = models.EventTime(**tmp)
         event.event_times.append(event_time)
     db.commit()
-
+    db.refresh(event)
     return event
 
 
@@ -46,7 +47,7 @@ def update_event(
     for key, value in tmp.items():
         setattr(event, key, value)
     db.commit()
-
+    db.refresh(event)
     return event
 
 
@@ -72,6 +73,7 @@ def watch_event(db: Session, id: int, user_id: int) -> models.Event:
     else:
         watched_users.count += 1
     db.commit()
+    db.refresh(event)
     return event
 
 
@@ -79,6 +81,7 @@ def delete_event(db: Session, id: int) -> bool:
     event = db.query(models.Event).filter(models.Event.id == id).first()
     db.delete(event)
     db.commit()
+    db.refresh(event)
     return True
 
 
