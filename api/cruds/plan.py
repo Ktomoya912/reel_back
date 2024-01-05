@@ -36,10 +36,9 @@ def delete_plan(db: Session, plan_id: int) -> Literal[True]:
 
 
 def purchase_plan(
-    db: Session, plan_id: int, current_user: schemas.User
+    db: Session, plan: schemas.PurchaseCreate, current_user: schemas.User
 ) -> models.Purchase:
-    plan = db.query(models.Plan).get(plan_id)
-    purchase = models.Purchase(user=current_user, plan=plan)
+    purchase = models.Purchase(user=current_user, **plan.model_dump())
     db.add(purchase)
     db.commit()
     db.refresh(purchase)
@@ -48,6 +47,8 @@ def purchase_plan(
 
 def cancel_plan(db: Session, purchase_id: int) -> Literal[True]:
     purchase = db.query(models.Purchase).get(purchase_id)
+    if purchase is None:
+        return False
     db.delete(purchase)
     db.commit()
     return True
@@ -86,6 +87,8 @@ def get_no_paid_users(db: Session) -> list[models.User]:
 
 def paid_checked(db: Session, purchase_id: int) -> Literal[True]:
     purchase = db.query(models.Purchase).get(purchase_id)
+    if purchase is None:
+        return False
     purchase.is_paid = True
     db.commit()
     db.refresh(purchase)

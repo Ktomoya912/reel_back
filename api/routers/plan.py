@@ -47,11 +47,11 @@ def delete_plan(
 
 @router.post("/{plan_id}/purchase", response_model=schemas.Purchase)
 def purchase_plan(
-    plan_id: int,
+    plan: schemas.PurchaseCreate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_company_user),
 ):
-    return plan_crud.purchase_plan(db, plan_id, current_user)
+    return plan_crud.purchase_plan(db, plan, current_user)
 
 
 @router.post("/cancel/{purchase_id}", response_model=bool)
@@ -60,10 +60,10 @@ def cancel_plan(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_company_user),
 ):
-    return plan_crud.cancel_plan(db, purchase_id, current_user)
+    return plan_crud.cancel_plan(db, purchase_id)
 
 
-@router.get("/no-paid", response_model=list[schemas.Plan])
+@router.get("/no-paid", response_model=list[schemas.Purchase])
 def get_no_paid_plans(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_company_user),
@@ -71,7 +71,7 @@ def get_no_paid_plans(
     return plan_crud.get_no_paid_plans(db, current_user.id)
 
 
-@router.get("/paid", response_model=list[schemas.Plan])
+@router.get("/paid", response_model=list[schemas.Purchase])
 def get_paid_plans(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_company_user),

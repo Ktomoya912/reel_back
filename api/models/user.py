@@ -19,7 +19,7 @@ class User(BaseModel):
     username = Column(String(20), unique=True)
     password = Column(String(255))
     email = Column(String(255), unique=True)
-    sex = Column(String(1))
+    sex = Column(String(1), default="o")
     birthday = Column(Date)
     image_url = Column(String(255))
     user_type = Column(String(1), default="u")

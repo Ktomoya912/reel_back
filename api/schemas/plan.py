@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class PlanBase(BaseModel):
     name: str = Field(..., max_length=255)
     price: int
-    period: datetime
+    period: int = Field(30, description="契約日数")
 
 
 class PlanCreate(PlanBase):
@@ -30,12 +30,13 @@ class PurchaseBase(BaseModel):
 
 
 class PurchaseCreate(PurchaseBase):
-    pass
+    contract_amount: int = Field(1, description="契約数", ge=1)
 
 
 class Purchase(PurchaseBase):
     id: int
     is_paid: bool
+    expiration_date: datetime
 
     class Config:
         orm_mode = True

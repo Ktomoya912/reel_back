@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, T
 from sqlalchemy.orm import relationship
 
 from api.db import BaseModel
+from api.utils import get_jst_now
 
 
 class JobTime(BaseModel):
@@ -46,11 +47,11 @@ class Job(BaseModel):
     working_location = Column(String(255))
     description = Column(Text)
     is_one_day = Column(Boolean, default=False)
-    period = Column(DateTime)
     additional_message = Column(Text)
     image_url = Column(String(255))
     status = Column(String(2))
     user_id = Column(Integer, ForeignKey("users.id"))
+    purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
     job_times = relationship("JobTime", backref="job")
     tags = relationship("Tag", secondary="job_tags", back_populates="jobs")
@@ -64,3 +65,8 @@ class Job(BaseModel):
         back_populates="job_watched",
         secondary="job_watched",
     )
+    purchase = relationship("Purchase", backref="job")
+
+    @property
+    def is_active(self):
+        return get_jst_now() < self.purchase.expiration_date
