@@ -185,3 +185,70 @@ def get_events_by_bookmark(query):
         .order_by(func.sum(models.EventBookmark.count).desc())
         .group_by(models.Event.id)
     )
+
+
+def create_review(
+    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
+):
+    event_review = models.EventReview(
+        **review.model_dump(), user_id=user_id, event_id=event_id
+    )
+    db.add(event_review)
+    db.commit()
+    db.refresh(event_review)
+    return event_review
+
+
+def update_review(
+    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
+):
+    event_review = (
+        db.query(models.EventReview)
+        .filter(
+            models.EventReview.user_id == user_id,
+            models.EventReview.event_id == event_id,
+        )
+        .first()
+    )
+    tmp = review.model_dump(exclude_unset=True)
+    for key, value in tmp.items():
+        setattr(event_review, key, value)
+    db.commit()
+    db.refresh(event_review)
+    return event_review
+
+
+def delete_review(db: Session, event_id: int, user_id: int):
+    event_review = (
+        db.query(models.EventReview)
+        .filter(
+            models.EventReview.user_id == user_id,
+            models.EventReview.event_id == event_id,
+        )
+        .first()
+    )
+    db.delete(event_review)
+    db.commit()
+    return True
+
+
+def bookmark_event(db: Session, event_id: int, user_id: int):
+    event_bookmark = models.EventBookmark(user_id=user_id, event_id=event_id)
+    db.add(event_bookmark)
+    db.commit()
+    db.refresh(event_bookmark)
+    return event_bookmark
+
+
+def unbookmark_event(db: Session, event_id: int, user_id: int):
+    event_bookmark = (
+        db.query(models.EventBookmark)
+        .filter(
+            models.EventBookmark.user_id == user_id,
+            models.EventBookmark.event_id == event_id,
+        )
+        .first()
+    )
+    db.delete(event_bookmark)
+    db.commit()
+    return True

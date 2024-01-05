@@ -97,7 +97,48 @@ def get_recent_events(db: Session = Depends(get_db)):
     return event_crud.get_recent_events(db)
 
 
-@router.get("/search/", response_model=list[schemas.EventListView])
-def search_events(db: Session = Depends(get_db), keyword: str = ""):
-    print(keyword)
-    return event_crud.search_events(db, keyword)
+@router.post("/{event_id}/bookmark", response_model=schemas.Event)
+def bookmark_event(
+    event_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return event_crud.bookmark_event(db, event_id, current_user.id)
+
+
+@router.delete("/{event_id}/bookmark")
+def unbookmark_event(
+    event_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return event_crud.unbookmark_event(db, event_id, current_user.id)
+
+
+@router.post("/{event_id}/review", response_model=schemas.EventReview)
+def post_review(
+    event_id: int,
+    review: schemas.EventReviewCreate,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return event_crud.create_review(db, event_id, current_user.id, review)
+
+
+@router.put("/{event_id}/review", response_model=schemas.EventReview)
+def update_review(
+    event_id: int,
+    review: schemas.EventReviewCreate,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return event_crud.update_review(db, event_id, current_user.id, review)
+
+
+@router.delete("/{event_id}/review")
+def delete_review(
+    event_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return event_crud.delete_review(db, event_id, current_user.id)
