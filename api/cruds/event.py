@@ -107,34 +107,26 @@ def get_recent_events(db: Session) -> list[models.Event]:
     return events
 
 
-def search_events(
-    db: Session,
-    keyword: str = "",
-) -> list[models.Event]:
-    events = (
-        db.query(models.Event)
-        .filter(
-            or_(
-                models.Event.name.contains(keyword),
-                models.Event.description.contains(keyword),
-            )
-        )
-        .filter(models.Event.status == "1")
-        .all()
-    )
-    return events
-
-
 def get_events(
     db: Session,
     only_active: bool = True,
+    keyword: str = "",
     sort: str = "new",
-    skip: int = 0,
+    order: str = "desc",
+    offset: int = 0,
     limit: int = 100,
 ):
     query = db.query(models.Event)
     if only_active:
         query = db.query(models.Event).filter(models.Event.status == "1")
+    if keyword != "":
+        query = query.filter(
+            or_(
+                models.Event.name.contains(keyword),
+                models.Event.description.contains(keyword),
+                models.Event.tags.any(models.Tag.name.contains(keyword)),
+            )
+        )
     if sort == "id":
         query = get_events_by_id(query)
     elif sort == "review":
@@ -143,9 +135,11 @@ def get_events(
         query = get_events_by_watched(query)
     elif sort == "favorite":
         query = get_events_by_bookmark(query)
+    elif sort == "pv":
+        query = get_events_by_pv(query)
     else:
         query = get_events_by_recent(query)
-    return query.offset(skip).limit(limit).all()
+    return query.offset(offset).limit(limit).all()
 
 
 # Reviewの評価平均順にイベントを取得
@@ -153,6 +147,14 @@ def get_events_by_review(query):
     return (
         query.outerjoin(models.EventReview)
         .order_by(func.avg(models.EventReview.review_point).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def get_events_by_pv(query):
+    return (
+        query.join(models.EventWatched)
+        .order_by(func.sum(models.EventWatched.count).desc())
         .group_by(models.Event.id)
     )
 
@@ -181,8 +183,8 @@ def get_events_by_recent(query):
 
 def get_events_by_bookmark(query):
     return (
-        query.join(models.EventBookmark)
-        .order_by(func.sum(models.EventBookmark.count).desc())
+        query.outerjoin(models.EventBookmark)
+        .order_by(func.count(models.EventBookmark.user_id).desc())
         .group_by(models.Event.id)
     )
 
