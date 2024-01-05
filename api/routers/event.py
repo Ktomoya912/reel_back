@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm.session import Session
 
 import api.cruds.event as event_crud
+import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.dependencies import (
@@ -46,6 +47,21 @@ def create_event(
     return event
 
 
+@router.post("/purchase-event", response_model=schemas.Event)
+def purchase_event(
+    current_user: Annotated[dict, Depends(get_current_active_user)],
+    purchase_data: schemas.EventArticleCreate,
+    db: Session = Depends(get_db),
+):
+    purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
+    event = create_event(current_user, purchase_data.event, db)
+    event.purchase = purchase
+    setattr(event, "is_favorite", event in current_user.event_bookmarks)
+    db.commit()
+    db.refresh(event)
+    return event
+
+
 @router.get("/", response_model=list[schemas.EventListView])
 def get_events(
     common: Annotated[dict, Depends(common_parameters)],
@@ -68,10 +84,12 @@ def get_event(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    return event_crud.watch_event(db, event_id, current_user.id)
+    event = event_crud.watch_event(db, event_id, current_user.id)
+    setattr(event, "is_favorite", event in current_user.event_bookmarks)
+    return event
 
 
-@router.put("/{event_id}", response_model=schemas.Event)
+@router.put("/{event_id}", response_model=schemas.EventListView)
 def update_event(
     event_id: int,
     event_update: schemas.EventCreate,
@@ -89,6 +107,7 @@ def activate_event(
 ):
     event = event_crud.get_event(db, event_id)
     event.status = "1"
+    setattr(event, "is_favorite", event in current_user.event_bookmarks)
     db.commit()
     db.refresh(event)
     return event
@@ -110,7 +129,7 @@ def get_recent_events(db: Session = Depends(get_db)):
     return event_crud.get_recent_events(db)
 
 
-@router.post("/{event_id}/bookmark", response_model=schemas.Event)
+@router.post("/{event_id}/bookmark")
 def bookmark_event(
     event_id: int,
     current_user: models.User = Depends(get_current_active_user),

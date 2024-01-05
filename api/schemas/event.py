@@ -123,7 +123,7 @@ class EventCreate(EventBase):
         max_length=100,
     )
     homepage: Optional[HttpUrl] = Field(
-        "",
+        ...,
         example="https://kochi-tech.ac.jp/",
         description="ホームページ",
     )
@@ -161,6 +161,7 @@ class Event(EventCreate, EventListView):
     tags: Optional[List[tag_schema.Tag]]
     event_times: List[EventTime]
     reviews: Optional[List[EventReview]]
+    is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
 
 
 class BaseImpression(BaseModel):

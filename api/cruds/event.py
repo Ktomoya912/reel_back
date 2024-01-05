@@ -235,15 +235,24 @@ def delete_review(db: Session, event_id: int, user_id: int):
 
 
 def bookmark_event(db: Session, event_id: int, user_id: int):
+    if (
+        db.query(models.EventBookmark)
+        .filter(
+            models.EventBookmark.user_id == user_id,
+            models.EventBookmark.event_id == event_id,
+        )
+        .first()
+    ):
+        return False
     event_bookmark = models.EventBookmark(user_id=user_id, event_id=event_id)
     db.add(event_bookmark)
     db.commit()
     db.refresh(event_bookmark)
-    return event_bookmark
+    return True
 
 
 def unbookmark_event(db: Session, event_id: int, user_id: int):
-    event_bookmark = (
+    bookmark = (
         db.query(models.EventBookmark)
         .filter(
             models.EventBookmark.user_id == user_id,
@@ -251,6 +260,8 @@ def unbookmark_event(db: Session, event_id: int, user_id: int):
         )
         .first()
     )
-    db.delete(event_bookmark)
+    if not bookmark:
+        return False
+    db.delete(bookmark)
     db.commit()
     return True
