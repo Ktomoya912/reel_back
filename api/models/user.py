@@ -21,6 +21,7 @@ class User(BaseModel):
     email = Column(String(255), unique=True)
     sex = Column(String(1))
     birthday = Column(Date)
+    image_url = Column(String(255))
     user_type = Column(String(1), default="u")
     is_active = Column(Boolean, default=False)
 

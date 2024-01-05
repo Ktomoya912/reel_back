@@ -48,6 +48,7 @@ class Job(BaseModel):
     is_one_day = Column(Boolean, default=False)
     period = Column(DateTime)
     additional_message = Column(Text)
+    image_url = Column(String(255))
     status = Column(String(2))
     user_id = Column(Integer, ForeignKey("users.id"))
 

@@ -55,6 +55,7 @@ class Event(BaseModel):
     period = Column(DateTime)
     status = Column(String(2))
     additional_message = Column(Text)
+    image_url = Column(String(255))
     caution = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
 

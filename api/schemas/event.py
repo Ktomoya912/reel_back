@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 import api.schemas.tag as tag_schema
 from api.utils import get_jst_now
@@ -70,6 +70,11 @@ class EventBase(BaseModel):
         min_length=5,
         max_length=100,
     )
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
+    )
 
 
 class EventListView(EventBase):
@@ -111,13 +116,13 @@ class EventCreate(EventBase):
         min_length=10,
         max_length=13,
     )
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         example="sample@ugs.ac.jp",
         description="メールアドレス",
         max_length=100,
     )
-    homepage: Optional[str] = Field(
+    homepage: Optional[HttpUrl] = Field(
         "",
         example="https://kochi-tech.ac.jp/",
         description="ホームページ",

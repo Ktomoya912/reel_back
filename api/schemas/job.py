@@ -1,12 +1,18 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from .user import Company
 
 
 class JobBase(BaseModel):
     title: str
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
+    )
     salary: int = Field(
         ...,
         example=1000,
@@ -32,11 +38,7 @@ class JobBase(BaseModel):
         example=True,
         description="1日のみかどうか",
     )
-    period: str = Field(
-        ...,
-        example="2週間",
-        description="期間",
-    )
+    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
     additional_message: str = Field(
         ...,
         example="初心者歓迎！",
