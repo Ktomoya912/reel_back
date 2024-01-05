@@ -13,15 +13,13 @@ engine = create_engine(DB_URL, echo=True)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def reset_db():
+def make_admin_user():
     load_dotenv()
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
     db = next(get_db())
     admin_user = user.User(
         username="admin",
-        password=pwd_context.hash("password"),
-        email=os.getenv("MAIL_SENDER"),
+        password=pwd_context.hash(os.getenv("ADMIN_PASSWORD")),
+        email=os.getenv("ADMIN_EMAIL"),
         birthday=date(2000, 1, 1),
         user_type="a",
         is_active=True,
@@ -30,5 +28,11 @@ def reset_db():
     db.commit()
 
 
+def reset_db():
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+
 if __name__ == "__main__":
     reset_db()
+    make_admin_user()
