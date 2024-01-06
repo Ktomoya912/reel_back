@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import api, schemas.response as response_schema
 import api.cruds.event as event_crud
 import api.cruds.tag as tag_crud
 import api.schemas.event as event_schema
@@ -22,7 +22,7 @@ async def common_parameters(
     return {"db": db, "sort": sort, "order": order, "offset": offset, "limit": limit}
 
 
-@router.post("/")
+@router.post("/", response_model=response_schema.Response)
 async def create_event(
     current_user: Annotated[dict, Depends(get_current_active_user)],
     event_create: event_schema.EventCreate,
@@ -30,11 +30,11 @@ async def create_event(
 ):
     event = await event_crud.create_event(db, event_create)
     event = await event_crud.create_event_times(db, event, event_create.event_times)
-    # event = await tag_crud.create_event_tags(db, event, event_create.tags)
+    event = await tag_crud.create_event_tags(db, event, event_create.tags)
     return {"message": "Created successfully"}
 
 
-@router.get("/", response_model=list[event_schema.Event])
+@router.get("/", response_model=list[event_schema.EventListView])
 async def get_events(
     common: Annotated[dict, Depends(common_parameters)], tag: str = ""
 ):
@@ -53,21 +53,22 @@ async def get_events(
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
 
 
-@router.get("/{event_id}", response_model=event_schema.Event)
+@router.get("/{event_id}", response_model=event_schema.EventDetail)
 async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
     return await event_crud.get_event(db, event_id)
 
 
-@router.put("/{event_id}", response_model=event_schema.Event)
+@router.put("/{event_id}", response_model=response_schema.Response)
 async def update_event(
     event_id: int,
     event_update: event_schema.EventCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    return await event_crud.update_event(db, event_id, event_update)
+    await event_crud.update_event(db, event_id, event_update)
+    return {"message": "Updated successfully"}
 
 
-@router.put("/{event_id}/activate", response_model=event_schema.Event)
+@router.put("/{event_id}/activate", response_model=event_schema.EventDetail)
 async def activate_event(
     event_id: int,
     db: AsyncSession = Depends(get_db),
@@ -79,18 +80,18 @@ async def activate_event(
     return event
 
 
-@router.delete("/{event_id}")
+@router.delete("/{event_id}", response_model=response_schema.Response)
 async def delete_event(event_id: int, db: AsyncSession = Depends(get_db)):
     if await event_crud.delete_event(db, event_id):
         return {"message": "Deleted successfully"}
     return {"message": "Failed to delete"}
 
 
-@router.get("/recent", response_model=list[event_schema.Event])
+@router.get("/recent", response_model=list[event_schema.EventListView])
 async def get_recent_events(db: AsyncSession = Depends(get_db)):
     return await event_crud.get_recent_events(db)
 
 
-@router.get("/search", response_model=list[event_schema.Event])
+@router.get("/search", response_model=list[event_schema.EventListView])
 async def search_events(db: AsyncSession = Depends(get_db), keyword: str = ""):
     return await event_crud.search_events(db, keyword)

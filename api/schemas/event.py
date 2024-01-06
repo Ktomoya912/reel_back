@@ -76,7 +76,8 @@ class EventReview(EventReviewBase):
         orm_mode = True
 
 
-class EventBase(BaseModel):
+class EventListView(BaseModel):
+    id: int
     name: str = Field(
         ...,
         example="イベント名",
@@ -84,6 +85,10 @@ class EventBase(BaseModel):
         min_length=5,
         max_length=100,
     )
+    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
+
+
+class EventDetail(EventListView):
     postal_code: str = Field(
         ...,
         example="782-8502",
@@ -149,29 +154,6 @@ class EventBase(BaseModel):
         description="説明",
         max_length=1000,
     )
-
-
-class EventCreate(EventBase):
-    tags: Optional[List[EventTagCreate]] = Field(
-        ...,
-        example=[],
-        description="タグ",
-    )
-    event_times: List[EventTimeCreate] = Field(
-        ...,
-        example=[
-            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
-        ],
-        description="イベント時間",
-    )
-
-    class Config:
-        orm_mode = True
-
-
-class Event(EventBase):
-    id: int
-    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
     tags: Optional[List[EventTag]] = Field(
         [],
         example=[],
@@ -188,6 +170,21 @@ class Event(EventBase):
         [],
         example=[],
         description="レビュー",
+    )
+
+
+class EventCreate(EventDetail):
+    tags: Optional[List[EventTagCreate]] = Field(
+        ...,
+        example=[],
+        description="タグ",
+    )
+    event_times: List[EventTimeCreate] = Field(
+        ...,
+        example=[
+            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
+        ],
+        description="イベント時間",
     )
 
     class Config:

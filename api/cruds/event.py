@@ -87,8 +87,14 @@ async def get_event_from_tag(
     tag = await tag_crud.get_tag_from_name(db, tag_name)
     sql = (
         select(event_model.Event)
-        .filter(event_model.Event.tags.any(tag))
+        .join(event_model.Event.tags)
+        .filter(event_model.Event.status == "1", event_model.Tag.id == tag.id)
         .order_by(sort_column if order == "asc" else sort_column.desc())
+        .options(
+            selectinload(event_model.Event.event_times),
+            selectinload(event_model.Event.tags),
+            selectinload(event_model.Event.reviews),
+        )
     )
     result: Result = await db.execute(sql)
     return result.scalars().all()

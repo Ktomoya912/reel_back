@@ -66,7 +66,9 @@ async def create_event_tags(
         tag = await get_tag_from_name(db, tag)
         if tag is None:
             tag = await create_tag(db, tag_schema.TagCreate(name=tag))
-        event.tags.append(tag)
-    await db.commit()
+        event_tag = event_model.EventTag(event_id=event.id, tag_id=tag.id)
+        db.add(event_tag)
+        await db.commit()
+        await db.refresh(event_tag)
     await db.refresh(event)
     return event

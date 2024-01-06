@@ -57,6 +57,8 @@ class Event(BaseModel):
     capacity = Column(Integer)
     period = Column(DateTime)
     status = Column(String(2))
+    caution = Column(Text)
+    additional_message = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     event_times = relationship("EventTime", backref="event")
