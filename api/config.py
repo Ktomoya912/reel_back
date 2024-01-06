@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,11 +9,11 @@ class BaseConfig(BaseSettings, extra="allow"):
 
 
 class DevelopConfig(BaseConfig):
-    MAIL_SENDER: str = Field(..., pattern=r"[\w\-._]+@[\w\-._]+")
+    MAIL_SENDER: EmailStr
 
 
 class ProductConfig(BaseConfig):
-    MAIL_SENDER: str = Field(..., pattern=r"[\w\-._]+@[\w\-._]+")
+    MAIL_SENDER: EmailStr
     IS_PRODUCT: bool = True
 
 

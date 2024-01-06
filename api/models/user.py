@@ -19,8 +19,9 @@ class User(BaseModel):
     username = Column(String(20), unique=True)
     password = Column(String(255))
     email = Column(String(255), unique=True)
-    sex = Column(String(1))
+    sex = Column(String(1), default="o")
     birthday = Column(Date)
+    image_url = Column(String(255))
     user_type = Column(String(1), default="u")
     is_active = Column(Boolean, default=False)
 
@@ -31,14 +32,22 @@ class User(BaseModel):
         "Job", secondary="job_bookmarks", back_populates="bookmark_users"
     )
     job_postings = relationship("Job", backref="created_by")
-    job_watched = relationship("JobWatched", back_populates="user")
+    job_watched = relationship(
+        "Job",
+        back_populates="watched_users",
+        secondary="job_watched",
+    )
 
     event_reviews = relationship("EventReview", backref="user")
     event_bookmarks = relationship(
         "Event", secondary="event_bookmarks", back_populates="bookmark_users"
     )
     event_postings = relationship("Event", backref="created_by")
-    event_watched = relationship("EventWatched", back_populates="user")
+    event_watched = relationship(
+        "Event",
+        back_populates="watched_users",
+        secondary="event_watched",
+    )
 
     applications = relationship("Application", back_populates="user")
     messages = relationship("MessageBox", back_populates="user")

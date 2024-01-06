@@ -1,21 +1,19 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
-import api.models.user as user_model
-import api.schemas.user as user_schema
-from api import config
-from api.db import get_db
+from api import config, models, schemas
+from api.db import Session
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 
 @lru_cache
@@ -33,11 +31,33 @@ def get_test_config():
     return config.TestConfig()
 
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db),
+def get_db(request: Request) -> Session:
+    return request.state.db
+
+
+def common_parameters(
+    db: Session = Depends(get_db),
+    keyword: str = "",
+    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
+    order: str = "asc",
+    offset: int = 0,
+    limit: int = 20,
+):
+    return {
+        "db": db,
+        "sort": sort,
+        "order": order,
+        "offset": offset,
+        "limit": limit,
+        "keyword": keyword,
+    }
+
+
+def get_current_user(
+    db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
     settings: config.BaseConfig = Depends(get_config),
-) -> user_model.User:
+) -> models.User:
     """現在のユーザーの取得"""
     credentials_exception = HTTPException(
         status_code=401, detail="Could not validate credentials"
@@ -47,19 +67,43 @@ async def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = user_schema.TokenData(username=username)
+        token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = await user_crud.get_user_by_username(db, username=token_data.username)
+    user = user_crud.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-async def get_current_active_user(
+def get_current_active_user(
     settings: Annotated[config.BaseConfig, Depends(get_config)],
-    current_user: user_model.User = Depends(get_current_user),
-):
+    current_user: models.User = Depends(get_current_user),
+) -> models.User:
     if not current_user.is_active and settings.IS_PRODUCT:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+def get_general_user(
+    current_user: models.User = Depends(get_current_active_user),
+):
+    if current_user.user_type in ["a", "g"]:
+        return current_user
+    raise HTTPException(status_code=400, detail="General user only")
+
+
+def get_company_user(
+    current_user: models.User = Depends(get_current_active_user),
+):
+    if current_user.user_type in ["a", "c"]:
+        return current_user
+    raise HTTPException(status_code=400, detail="Company user only")
+
+
+def get_admin_user(
+    current_user: models.User = Depends(get_current_active_user),
+):
+    if current_user.user_type == "a":
+        return current_user
+    raise HTTPException(status_code=400, detail="Admin user only")

@@ -2,6 +2,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from api.db import BaseModel
+from api.utils import get_jst_now
 
 
 class EventTime(BaseModel):
@@ -34,12 +35,9 @@ class EventBookmark(BaseModel):
 class EventWatched(BaseModel):
     __tablename__ = "event_watched"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    event_id = Column(Integer, ForeignKey("events.id"))
-
-    user = relationship("User", back_populates="event_watched")
-    event = relationship("Event", back_populates="watched_users")
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
+    count = Column(Integer, default=1)
 
 
 class Event(BaseModel):
@@ -55,11 +53,12 @@ class Event(BaseModel):
     description = Column(Text)
     participation_fee = Column(String(255))
     capacity = Column(Integer)
-    period = Column(DateTime)
     status = Column(String(2))
-    caution = Column(Text)
     additional_message = Column(Text)
+    image_url = Column(String(255))
+    caution = Column(Text)
     user_id = Column(Integer, ForeignKey("users.id"))
+    purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
     event_times = relationship("EventTime", backref="event")
     tags = relationship("Tag", secondary="event_tags", back_populates="events")
@@ -67,4 +66,13 @@ class Event(BaseModel):
     bookmark_users = relationship(
         "User", secondary="event_bookmarks", back_populates="event_bookmarks"
     )
-    watched_users = relationship("EventWatched", back_populates="event")
+    watched_users = relationship(
+        "User",
+        back_populates="event_watched",
+        secondary="event_watched",
+    )
+    purchase = relationship("Purchase", backref="event")
+
+    @property
+    def is_active(self):
+        return get_jst_now() < self.purchase.expiration_date

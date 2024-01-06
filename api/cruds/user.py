@@ -1,16 +1,12 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional, Union
 
 from jose import jwt
 from passlib.context import CryptContext
-from sqlalchemy import select
-from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.session import Session
 
-import api.models.company as company_model
-import api.models.user as user_model
-import api.schemas.user as user_schema
+from api import models, schemas
+from api.utils import get_jst_now
 
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -21,11 +17,11 @@ def verify_password(plain_password, hashed_password) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-async def authenticate_user(
-    db: AsyncSession, username: str, password: str
-) -> Union[bool, user_model.User]:
+def authenticate_user(
+    db: Session, username: str, password: str
+) -> Union[bool, models.User]:
     """ユーザーの認証"""
-    user = await get_user_by_username(db, username)
+    user = get_user_by_username(db, username)
     if not user:
         return False
     if not verify_password(password, user.password):
@@ -33,117 +29,101 @@ async def authenticate_user(
     return user
 
 
-async def create_access_token(
+def create_access_token(
     secret_key: str, data: dict, expires_delta: Optional[timedelta] = None
 ) -> str:
     """アクセストークンの生成"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = get_jst_now() + expires_delta
     else:
-        expire = datetime.now() + timedelta(days=30)
+        expire = get_jst_now() + timedelta(days=30)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-async def create_company(
-    db: AsyncSession, company_create: user_schema.CompanyCreate
-) -> company_model.Company:
+def create_company(
+    db: Session, company_create: schemas.CompanyCreate
+) -> models.Company:
     """会社の作成"""
     tmp = company_create.model_dump()
-    company = company_model.Company(**tmp)
+    company = models.Company(**tmp)
     db.add(company)
-    await db.commit()
-    await db.refresh(company)
+    db.commit()
+    db.refresh(company)
     return company
 
 
-async def create_user_company(
-    db: AsyncSession, user_create: user_schema.UserCreateCompany
-) -> user_model.User:
+def create_user_company(
+    db: Session, user_create: schemas.UserCreateCompany
+) -> models.User:
     """ユーザーと会社の作成"""
     tmp = user_create.model_dump()
-    company = await create_company(db, user_create.company)
+    company = create_company(db, user_create.company)
     tmp["company"] = company
-    user = user_model.User(**tmp)
+    user = models.User(**tmp)
     db.add(user)
-    await db.commit()
-    await db.refresh(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 
-async def create_user(
-    db: AsyncSession, user_create: user_schema.UserCreate
-) -> user_model.User:
+def create_user(db: Session, user_create: schemas.UserCreate) -> models.User:
     """ユーザーの作成"""
     tmp = user_create.model_dump()
-    user = user_model.User(**tmp)
+    user = models.User(**tmp)
     db.add(user)
-    await db.commit()
-    await db.refresh(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 
-async def get_users(db: AsyncSession) -> list[user_model.User]:
-    sql = select(user_model.User).options(selectinload(user_model.User.company))
-    result: Result = await db.execute(sql)
-    return result.scalars()
+def get_users(db: Session) -> list[models.User]:
+    """ユーザー一覧の取得"""
+    users = db.query(models.User).all()
+    return users
 
 
-async def get_user_by_username(
-    db: AsyncSession, username: str
-) -> Optional[user_model.User]:
+def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
     """ユーザー名からユーザー情報を取得"""
-    sql = (
-        select(user_model.User)
-        .options(selectinload(user_model.User.company))
-        .filter(user_model.User.username == username)
-    )
-    result: Result = await db.execute(sql)
-    return result.scalar_one_or_none()
+    user = db.query(models.User).filter(models.User.username == username).first()
+    return user
 
 
-async def get_user_by_email(db: AsyncSession, email: str) -> Optional[user_model.User]:
+def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     """メールアドレスからユーザー情報を取得"""
-    sql = (
-        select(user_model.User)
-        .options(selectinload(user_model.User.company))
-        .filter(user_model.User.email == email)
-    )
-    result: Result = await db.execute(sql)
-    return result.scalar_one_or_none()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    return user
 
 
-async def get_user(db: AsyncSession, user_id: int) -> Optional[user_model.User]:
+def get_user(db: Session, user_id: int) -> Optional[models.User]:
     """idからユーザー情報を取得"""
-    sql = (
-        select(user_model.User)
-        .options(selectinload(user_model.User.company))
-        .filter(user_model.User.id == user_id)
-    )
-    result: Result = await db.execute(sql)
-    return result.scalar_one_or_none()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    return user
 
 
-async def update_user(
-    db: AsyncSession, user_create: user_schema.UserCreate, original: user_model.User
-) -> user_model.User:
-    original.username = user_create.username
-    await db.commit()
-    await db.refresh(original)
+def update_user(
+    db: Session, user_create: schemas.UserCreate, original: models.User
+) -> models.User:
+    update_data = user_create.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(original, key, value)
+    db.commit()
+    db.refresh(original)
     return original
 
 
-async def update_user_password(
-    db: AsyncSession, user: user_model.User, password: str
-) -> user_model.User:
-    user.password = password
-    await db.commit()
-    await db.refresh(user)
+def update_user_password(
+    db: Session, user: models.User, new_password: schemas.UserPasswordChange
+) -> models.User:
+    user.password = pwd_context.hash(new_password.password)
+    db.commit()
+    db.refresh(user)
     return user
 
 
-async def delete_user(db: AsyncSession, user: user_model.User) -> None:
-    await db.delete(user)
-    await db.commit()
+def delete_user(db: Session, user: models.User) -> False:
+    db.delete(user)
+    db.commit()
+    return True

@@ -3,97 +3,105 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from jinja2 import Template
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
 import api.routers.auth as auth_router
-import api.schemas.user as user_schema
-from api import config
-from api.db import get_db
-from api.modules.email import send_email
+from api import config, schemas
+from api.utils import send_email
 
-from ..dependencies import get_config, get_current_user
+from ..dependencies import get_config, get_current_user, get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=user_schema.UserCreateResponse)
-async def create_user(
+@router.post("/", response_model=schemas.UserCreateResponse)
+def create_user(
     request: Request,
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
-    user_body: user_schema.UserCreate,
-    db: AsyncSession = Depends(get_db),
+    user_body: schemas.UserCreate,
+    db: Session = Depends(get_db),
 ):
-    user = await user_crud.create_user(db, user_body)
+    if user_crud.get_user_by_email(db, user_body.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if user_crud.get_user_by_username(db, user_body.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    user = user_crud.create_user(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(
+        auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
     return user
 
 
-@router.post("/company", response_model=user_schema.UserCreateResponse)
-async def create_user_company(
+@router.post("/company", response_model=schemas.UserCreateResponse)
+def create_user_company(
     request: Request,
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
-    user_body: user_schema.UserCreateCompany,
-    db: AsyncSession = Depends(get_db),
+    user_body: schemas.UserCreateCompany,
+    db: Session = Depends(get_db),
 ):
-    user = await user_crud.create_user_company(db, user_body)
+    if user_crud.get_user_by_email(db, user_body.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if user_crud.get_user_by_username(db, user_body.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    user = user_crud.create_user_company(db, user_body)
     if settings.IS_PRODUCT:
-        await auth_router.send_verification_email(
+        auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
     return user
 
 
-@router.get("", response_model=list[user_schema.User])
-async def get_users(db: AsyncSession = Depends(get_db)):
-    return await user_crud.get_users(db)
+@router.get("", response_model=list[schemas.User])
+def get_users(db: Session = Depends(get_db)):
+    return user_crud.get_users(db)
 
 
-@router.get("/me", response_model=user_schema.User)
-async def get_user_me(
-    current_user: user_schema.User = Depends(get_current_user),
+@router.get("/me", response_model=schemas.User)
+def get_user_me(
+    current_user: schemas.User = Depends(get_current_user),
 ):
     return current_user
 
 
-@router.get("/{user_id}", response_model=user_schema.User)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    return await user_crud.get_user(db, user_id)
+@router.get("/{user_id}", response_model=schemas.User)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return user_crud.get_user(db, user_id)
 
 
-@router.put("/{user_id}", response_model=user_schema.UserCreateResponse)
-async def update_user(
-    user_id: int, user_body: user_schema.UserCreate, db: AsyncSession = Depends(get_db)
+@router.put("/{user_id}", response_model=schemas.UserCreateResponse)
+def update_user(
+    user_id: int, user_body: schemas.UserCreate, db: Session = Depends(get_db)
 ):
-    user = await user_crud.get_user(db, user_id)
+    user = user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return await user_crud.update_user(db, user_body, original=user)
+    return user_crud.update_user(db, user_body, original=user)
 
 
 @router.delete("/{user_id}", response_model=None)
-async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    user = await user_crud.get_user(db, user_id)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return await user_crud.delete_user(db, user)
+    return user_crud.delete_user(db, user)
 
 
 @router.post("/send-mail-to-admin", response_model=None)
-async def send_mail_to_admin(
+def send_mail_to_admin(
+    background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
-    mail_body: user_schema.MailBody,
+    mail_body: schemas.MailBody,
 ):
     """お問い合わせを管理者にメール送信"""
     html_file = Path(__file__).parent.parent / "templates" / "mail-to-admin.html"
     html = Template(html_file.read_text())
     to_list = [settings.MAIL_SENDER, mail_body.email]
-    send_email(
+    background_tasks.add_task(
+        send_email,
         settings.MAIL_SENDER,
         to_list,
         f"お問い合わせ: {mail_body.subject}",

@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, Union
 
 from passlib.context import CryptContext
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_serializer
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -14,8 +14,8 @@ class CompanyBase(BaseModel):
     city: str
     address: str
     phone_number: str
-    email: str
-    homepage: Optional[str] = Field(
+    email: EmailStr
+    homepage: Optional[HttpUrl] = Field(
         "",
         example="https://example.com",
         description="ホームページ",
@@ -51,11 +51,10 @@ class TokenData(BaseModel):
 
 
 class MailBody(BaseModel):
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         example="my@example.com",
         description="メールアドレス",
-        pattern=r"[\w\-._]+@[\w\-._]+",
     )
     subject: str = Field(
         ...,
@@ -72,7 +71,23 @@ class MailBody(BaseModel):
         orm_mode = True
 
 
-class UserBase(BaseModel):
+class UserPasswordChange(BaseModel):
+    password: str = Field(
+        ...,
+        example="password",
+        description="パスワード",
+        min_length=8,
+    )
+
+    @field_serializer("password")
+    def password_hash(self, v: str):
+        return pwd_context.hash(v)
+
+    class Config:
+        orm_mode = True
+
+
+class UserBase(UserPasswordChange):
     username: str = Field(
         ...,
         example="username",
@@ -81,17 +96,15 @@ class UserBase(BaseModel):
         max_length=16,
         pattern=r"[\w\-._]+",
     )
-    password: str = Field(
-        ...,
-        example="password",
-        description="パスワード",
-        min_length=8,
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
     )
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         example="my@example.com",
         description="メールアドレス",
-        pattern=r"[\w\-._]+@[\w\-._]+",
     )
     sex: Optional[str] = Field(
         "o",
@@ -101,23 +114,17 @@ class UserBase(BaseModel):
     )
     birthday: datetime.date
     user_type: str = Field(
-        "u",
-        example="u",
+        "g",
+        example="g",
         description="ユーザータイプ",
+        pattern=r"[gca]",
     )
-
-    @field_serializer("password")
-    def password_hash(self, v: str):
-        return pwd_context.hash(v)
 
 
 class User(UserBase):
     id: int
     company: Optional["Company"]
     is_active: bool
-
-    class Config:
-        orm_mode = True
 
 
 class UserCreate(UserBase):
@@ -136,6 +143,3 @@ class UserCreateCompany(UserCreate):
 
 class UserCreateResponse(UserCreate):
     id: int
-
-    class Config:
-        orm_mode = True

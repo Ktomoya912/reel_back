@@ -1,12 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
+
+import api.schemas.tag as tag_schema
+from api.utils import get_jst_now
+
+sample_date = get_jst_now() + timedelta(days=1)
+start_time = sample_date.strftime("%Y-%m-%d %H:%M:%S")
+end_time = (sample_date + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class EventTimeBase(BaseModel):
-    start_time: datetime = Field(..., example="2023-12-31 23:59:59", description="開始日時")
-    end_time: datetime = Field(..., example="2023-12-31 23:59:59", description="終了日時")
+    start_time: datetime = Field(..., example=start_time, description="開始日時")
+    end_time: datetime = Field(..., example=end_time, description="終了日時")
 
 
 class EventTimeCreate(EventTimeBase):
@@ -14,27 +21,6 @@ class EventTimeCreate(EventTimeBase):
 
 
 class EventTime(EventTimeBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-
-class EventTagBase(BaseModel):
-    name: str = Field(
-        ...,
-        example="タグ名",
-        description="タグ名",
-        min_length=1,
-        max_length=20,
-    )
-
-
-class EventTagCreate(EventTagBase):
-    pass
-
-
-class EventTag(EventTagBase):
     id: int
 
     class Config:
@@ -85,10 +71,20 @@ class EventListView(BaseModel):
         min_length=5,
         max_length=100,
     )
-    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
+    )
 
 
-class EventDetail(EventListView):
+class EventListView(EventBase):
+    id: int = Field(..., example=1, description="イベントID")
+    status: Optional[str] = Field(..., example="1", description="イベントステータス")
+    event_times: List[EventTime]
+
+
+class EventCreate(EventBase):
     postal_code: str = Field(
         ...,
         example="782-8502",
@@ -121,14 +117,14 @@ class EventDetail(EventListView):
         min_length=10,
         max_length=13,
     )
-    email: str = Field(
+    email: EmailStr = Field(
         ...,
         example="sample@ugs.ac.jp",
         description="メールアドレス",
         max_length=100,
     )
-    homepage: Optional[str] = Field(
-        "",
+    homepage: Optional[HttpUrl] = Field(
+        ...,
         example="https://kochi-tech.ac.jp/",
         description="ホームページ",
     )
@@ -142,53 +138,31 @@ class EventDetail(EventListView):
         example=100,
         description="定員",
     )
-    # additional_message: str = Field(
-    #     ...,
-    #     example="",
-    #     description="追加メッセージ",
-    #     max_length=100,
-    # )
+    additional_message: str = Field(
+        ...,
+        example="",
+        description="追加メッセージ",
+        max_length=1000,
+    )
     description: str = Field(
         ...,
         example="",
         description="説明",
         max_length=1000,
     )
-    tags: Optional[List[EventTag]] = Field(
-        [],
-        example=[],
-        description="タグ",
-    )
-    event_times: List[EventTime] = Field(
-        [],
-        example=[
-            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
-        ],
-        description="イベント時間",
-    )
-    reviews: Optional[List[EventReview]] = Field(
-        [],
-        example=[],
-        description="レビュー",
-    )
-
-
-class EventCreate(EventDetail):
-    tags: Optional[List[EventTagCreate]] = Field(
-        ...,
-        example=[],
-        description="タグ",
-    )
-    event_times: List[EventTimeCreate] = Field(
-        ...,
-        example=[
-            {"start_time": "2023-12-31 23:59:59", "end_time": "2023-12-31 23:59:59"}
-        ],
-        description="イベント時間",
-    )
+    tags: Optional[List[tag_schema.TagCreate]]
+    event_times: List[EventTimeCreate]
 
     class Config:
         orm_mode = True
+
+
+class Event(EventCreate, EventListView):
+    # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
+    tags: Optional[List[tag_schema.Tag]]
+    event_times: List[EventTime]
+    reviews: Optional[List[EventReview]]
+    is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
 
 
 class BaseImpression(BaseModel):

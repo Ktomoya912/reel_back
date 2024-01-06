@@ -1,1 +1,7 @@
-from api.models import company, event, job, message, plan, tag, user  # noqa F401
+from .event import *
+from .job import *
+from .message import *
+from .plan import *
+from .purchase import *
+from .tag import *
+from .user import *

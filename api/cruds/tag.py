@@ -1,74 +1,41 @@
-from sqlalchemy import select
-from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.session import Session
 
-import api.models.event as event_model
-import api.models.job as job_model
-import api.models.tag as tag_model
-import api.schemas.tag as tag_schema
+from api import models, schemas
 
 
-async def create_tag(
-    db: AsyncSession, tag_create: tag_schema.TagCreate
-) -> tag_model.Tag:
-    tag = await get_tag_from_name(db, tag_create.name)
-    if tag is not None:
-        return tag
-    tag = tag_model.Tag(**tag_create.model_dump())
+def create_tag(db: Session, tag: schemas.TagCreate) -> models.Tag:
+    if tag is None:
+        return None
+    tmp = tag.model_dump()
+    tag = models.Tag(**tmp)
     db.add(tag)
-    await db.commit()
-    await db.refresh(tag)
+    db.commit()
+    db.refresh(tag)
     return tag
 
 
-async def get_tag_from_name(db: AsyncSession, tag_name: str) -> tag_model.Tag:
-    sql = select(tag_model.Tag).filter(tag_model.Tag.name == tag_name)
-    result: Result = await db.execute(sql)
-    return result.scalar_one_or_none()
+def get_tag_by_name(db: Session, tag_name: str) -> models.Tag:
+    tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
+    return tag
 
 
-async def get_job_from_tag(
-    db: AsyncSession, tag_name: str, sort: str = "id", order: str = "asc"
-) -> list[job_model.Job]:
-    try:
-        sort_column = getattr(job_model.Job, sort)
-    except AttributeError:
-        sort_column = job_model.Job.id
-    tag = await get_tag_from_name(db, tag_name)
-    sql = (
-        select(job_model.Job)
-        .filter(job_model.Job.tags.any(tag))
-        .order_by(sort_column if order == "asc" else sort_column.desc())
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+def get_tags(db: Session) -> list[models.Tag]:
+    return db.query(models.Tag).all()
 
 
-async def create_job_tags(
-    db: AsyncSession, job: job_model.Job, tags: list[str]
-) -> job_model.Job:
-    job.tags = []
-    for tag in tags:
-        tag = await get_tag_from_name(db, tag)
-        if tag is None:
-            tag = await create_tag(db, tag_schema.TagCreate(name=tag))
-        job.tags.append(tag)
-    await db.commit()
-    await db.refresh(job)
-    return job
-
-
-async def create_event_tags(
-    db: AsyncSession, event: event_model.Event, tags: list[str]
-) -> event_model.Event:
+def create_event_tags(
+    db: Session, event: models.Event, tags: list[schemas.TagCreate]
+) -> models.Event:
     event.tags = []
     for tag in tags:
-        tag = await get_tag_from_name(db, tag)
-        if tag is None:
-            tag = await create_tag(db, tag_schema.TagCreate(name=tag))
-        event_tag = event_model.EventTag(event_id=event.id, tag_id=tag.id)
-        db.add(event_tag)
-        await db.commit()
-        await db.refresh(event_tag)
-    await db.refresh(event)
+        models = get_tag_by_name(db, tag.name)
+        if models is None:
+            models = create_tag(db, tag)
+        try:
+            event.tags.append(models)
+            db.flush()
+        except Exception:
+            db.rollback()
+    db.commit()
+    db.refresh(event)
     return event

@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, T
 from sqlalchemy.orm import relationship
 
 from api.db import BaseModel
+from api.utils import get_jst_now
 
 
 class JobTime(BaseModel):
@@ -34,12 +35,9 @@ class JobBookmark(BaseModel):
 class JobWatched(BaseModel):
     __tablename__ = "job_watched"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    job_id = Column(Integer, ForeignKey("jobs.id"))
-
-    user = relationship("User", back_populates="job_watched")
-    job = relationship("Job", back_populates="watched_users")
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
+    count = Column(Integer, default=1)
 
 
 class Job(BaseModel):
@@ -49,10 +47,11 @@ class Job(BaseModel):
     working_location = Column(String(255))
     description = Column(Text)
     is_one_day = Column(Boolean, default=False)
-    period = Column(DateTime)
     additional_message = Column(Text)
+    image_url = Column(String(255))
     status = Column(String(2))
     user_id = Column(Integer, ForeignKey("users.id"))
+    purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
     job_times = relationship("JobTime", backref="job")
     tags = relationship("Tag", secondary="job_tags", back_populates="jobs")
@@ -61,4 +60,13 @@ class Job(BaseModel):
         "User", secondary="job_bookmarks", back_populates="job_bookmarks"
     )
     applications = relationship("Application", back_populates="job")
-    watched_users = relationship("JobWatched", back_populates="job")
+    watched_users = relationship(
+        "User",
+        back_populates="job_watched",
+        secondary="job_watched",
+    )
+    purchase = relationship("Purchase", backref="job")
+
+    @property
+    def is_active(self):
+        return get_jst_now() < self.purchase.expiration_date

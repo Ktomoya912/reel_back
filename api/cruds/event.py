@@ -1,162 +1,262 @@
 import datetime
 
-from sqlalchemy import select
-from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.session import Session
+from sqlalchemy.sql import func, or_
 
 import api.cruds.tag as tag_crud
-import api.models.event as event_model
-import api.schemas.event as event_schema
+from api import models, schemas
+from api.utils import get_jst_now
 
 
-async def create_event(
-    db: AsyncSession, event_create: event_schema.EventCreate
-) -> event_model.Event:
+def create_event(
+    db: Session, event_create: schemas.EventCreate, user_id: int
+) -> models.Event:
     tmp = event_create.model_dump(exclude={"tags", "event_times"})
-    event = event_model.Event(**tmp)
+    event = models.Event(**tmp, user_id=user_id)
     db.add(event)
-    await db.commit()
-    await db.refresh(event)
+    db.commit()
+    db.refresh(event)
     return event
 
 
-async def create_event_times(
-    db: AsyncSession,
-    event: event_model.Event,
-    event_times: list[event_schema.EventTimeCreate],
-) -> event_model.EventTime:
+def create_event_times(
+    db: Session,
+    event: models.Event,
+    event_times: list[schemas.EventTimeCreate],
+) -> models.EventTime:
     for event_time in event_times:
         tmp = event_time.model_dump()
-        tmp["event_id"] = event.id
-        event_time = event_model.EventTime(**tmp)
-        db.add(event_time)
-        await db.commit()
-        await db.refresh(event_time)
+        event_time = models.EventTime(**tmp)
+        event.event_times.append(event_time)
+    db.commit()
+    db.refresh(event)
     return event
 
 
-async def update_event(
-    db: AsyncSession, id: int, event_update: event_schema.EventCreate
-) -> event_model.Event:
+def update_event(
+    db: Session, id: int, event_update: schemas.EventCreate
+) -> models.Event:
     tags = event_update.tags
-    sql = select(event_model.Event).filter(event_model.Event.id == id)
-    result: Result = await db.execute(sql)
-    event = result.scalar_one()
-    await tag_crud.create_event_tags(db, event_update, tags)
+    event = get_event(db, id)
+    tag_crud.create_event_tags(db, event, tags)
     tmp = event_update.model_dump(exclude={"tags"})
     for key, value in tmp.items():
         setattr(event, key, value)
-    await db.commit()
-    await db.refresh(event)
+    db.commit()
+    db.refresh(event)
     return event
 
 
-async def get_event(db: AsyncSession, id: int) -> event_model.Event:
-    sql = (
-        select(event_model.Event)
-        .options(
-            selectinload(event_model.Event.event_times),
-            selectinload(event_model.Event.tags),
-            selectinload(event_model.Event.reviews),
+def get_event(db: Session, id: int) -> models.Event:
+    event = db.query(models.Event).filter(models.Event.id == id).first()
+    return event
+
+
+def watch_event(db: Session, event_id: int, user_id: int) -> models.Event:
+    event = get_event(db, event_id)
+    watched_users = (
+        db.query(models.EventWatched)
+        .filter(
+            models.EventWatched.user_id == user_id,
+            models.EventWatched.event_id == event_id,
         )
-        .filter(event_model.Event.id == id)
+        .first()
     )
+    if watched_users is None:
+        watched_users = models.EventWatched(user_id=user_id, event_id=event_id)
+        db.add(watched_users)
+    else:
+        watched_users.count += 1
+    db.commit()
+    db.refresh(event)
+    return event
 
-    result: Result = await db.execute(sql)
-    return result.scalar_one()
 
-
-async def delete_event(db: AsyncSession, id: int) -> bool:
-    sql = select(event_model.Event).filter(event_model.Event.id == id)
-    result: Result = await db.execute(sql)
-    event = result.scalar_one()
+def delete_event(db: Session, id: int) -> bool:
+    event = db.query(models.Event).filter(models.Event.id == id).first()
     db.delete(event)
-    await db.commit()
+    db.commit()
+    db.refresh(event)
     return True
 
 
-async def get_event_from_tag(
-    db: AsyncSession, tag_name: str, sort: str = "id", order: str = "asc"
-) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    tag = await tag_crud.get_tag_from_name(db, tag_name)
-    sql = (
-        select(event_model.Event)
-        .join(event_model.Event.tags)
-        .filter(event_model.Event.status == "1", event_model.Tag.id == tag.id)
-        .order_by(sort_column if order == "asc" else sort_column.desc())
-        .options(
-            selectinload(event_model.Event.event_times),
-            selectinload(event_model.Event.tags),
-            selectinload(event_model.Event.reviews),
-        )
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+def get_event_by_tag(db: Session, tag_name: str) -> list[models.Event]:
+    tag = tag_crud.get_tag_by_name(db, tag_name)
+    return tag.events
 
 
 # 開催時期が3日以内のイベントを取得
-async def get_recent_events(db: AsyncSession) -> list[event_model.Event]:
-    sql = select(event_model.Event).filter(
-        event_model.Event.status == "1",
-        event_model.Event.event_times.any(
-            event_model.EventTime.start_time
-            > datetime.datetime.now() - datetime.timedelta(days=3)
-        ),
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
-
-
-async def search_events(
-    db: AsyncSession,
-    keyword: str = "",
-    sort: str = "id",
-    order: str = "asc",
-) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    sql = (
-        select(event_model.Event)
-        .options(
-            selectinload(event_model.Event.event_times),
-            selectinload(event_model.Event.tags),
-            selectinload(event_model.Event.reviews),
-        )
+def get_recent_events(db: Session) -> list[models.Event]:
+    now = get_jst_now()
+    start_time = now + datetime.timedelta(days=3)
+    events = (
+        db.query(models.Event)
+        .join(models.EventTime)
         .filter(
+            models.EventTime.start_time >= now,
+            models.EventTime.start_time <= start_time,
+            models.Event.status == "1",
+        )
+        .all()
+    )
+    return events
+
+
+def get_events(
+    db: Session,
+    only_active: bool = True,
+    keyword: str = "",
+    sort: str = "new",
+    order: str = "desc",
+    offset: int = 0,
+    limit: int = 100,
+):
+    query = db.query(models.Event)
+    if only_active:
+        query = db.query(models.Event).filter(models.Event.status == "1")
+    if keyword != "":
+        query = query.filter(
             or_(
-                event_model.Event.title.like(f"%{keyword}%"),
-                event_model.Event.description.like(f"%{keyword}%"),
-            ),
+                models.Event.name.contains(keyword),
+                models.Event.description.contains(keyword),
+                models.Event.tags.any(models.Tag.name.contains(keyword)),
+            )
         )
-        .order_by(sort_column if order == "asc" else sort_column.desc())
-    )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+    if sort == "id":
+        query = get_events_by_id(query)
+    elif sort == "review":
+        query = get_events_by_review(query)
+    elif sort == "watched":
+        query = get_events_by_watched(query)
+    elif sort == "favorite":
+        query = get_events_by_bookmark(query)
+    elif sort == "pv":
+        query = get_events_by_pv(query)
+    else:
+        query = get_events_by_recent(query)
+    return query.offset(offset).limit(limit).all()
 
 
-async def get_events(
-    db: AsyncSession, sort: str = "id", order: str = "asc"
-) -> list[event_model.Event]:
-    try:
-        sort_column = getattr(event_model.Event, sort)
-    except AttributeError:
-        sort_column = event_model.Event.id
-    sql = (
-        select(event_model.Event)
-        .order_by(sort_column if order == "asc" else sort_column.desc())
-        .options(
-            selectinload(event_model.Event.event_times),
-            selectinload(event_model.Event.tags),
-            selectinload(event_model.Event.reviews),
-        )
+# Reviewの評価平均順にイベントを取得
+def get_events_by_review(query):
+    return (
+        query.outerjoin(models.EventReview)
+        .order_by(func.avg(models.EventReview.review_point).desc())
+        .group_by(models.Event.id)
     )
-    result: Result = await db.execute(sql)
-    return result.scalars().all()
+
+
+def get_events_by_pv(query):
+    return (
+        query.join(models.EventWatched)
+        .order_by(func.sum(models.EventWatched.count).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def get_events_by_watched(query):
+    return (
+        query.join(models.EventWatched)
+        .order_by(func.sum(models.EventWatched.count).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def get_events_by_id(query):
+    return query.order_by(models.Event.id.desc())
+
+
+def get_events_by_recent(query):
+    now = get_jst_now()
+    # 現在日時と開催日時の差が小さい順にイベントを取得、開催日時が過ぎているものは除外
+    return (
+        query.join(models.EventTime)
+        .filter(models.EventTime.start_time >= now)
+        .order_by(models.EventTime.start_time)
+    )
+
+
+def get_events_by_bookmark(query):
+    return (
+        query.outerjoin(models.EventBookmark)
+        .order_by(func.count(models.EventBookmark.user_id).desc())
+        .group_by(models.Event.id)
+    )
+
+
+def create_review(
+    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
+):
+    event_review = models.EventReview(
+        **review.model_dump(), user_id=user_id, event_id=event_id
+    )
+    db.add(event_review)
+    db.commit()
+    db.refresh(event_review)
+    return event_review
+
+
+def update_review(
+    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
+):
+    event_review = (
+        db.query(models.EventReview)
+        .filter(
+            models.EventReview.user_id == user_id,
+            models.EventReview.event_id == event_id,
+        )
+        .first()
+    )
+    tmp = review.model_dump(exclude_unset=True)
+    for key, value in tmp.items():
+        setattr(event_review, key, value)
+    db.commit()
+    db.refresh(event_review)
+    return event_review
+
+
+def delete_review(db: Session, event_id: int, user_id: int):
+    event_review = (
+        db.query(models.EventReview)
+        .filter(
+            models.EventReview.user_id == user_id,
+            models.EventReview.event_id == event_id,
+        )
+        .first()
+    )
+    db.delete(event_review)
+    db.commit()
+    return True
+
+
+def bookmark_event(db: Session, event_id: int, user_id: int):
+    if (
+        db.query(models.EventBookmark)
+        .filter(
+            models.EventBookmark.user_id == user_id,
+            models.EventBookmark.event_id == event_id,
+        )
+        .first()
+    ):
+        return False
+    event_bookmark = models.EventBookmark(user_id=user_id, event_id=event_id)
+    db.add(event_bookmark)
+    db.commit()
+    db.refresh(event_bookmark)
+    return True
+
+
+def unbookmark_event(db: Session, event_id: int, user_id: int):
+    bookmark = (
+        db.query(models.EventBookmark)
+        .filter(
+            models.EventBookmark.user_id == user_id,
+            models.EventBookmark.event_id == event_id,
+        )
+        .first()
+    )
+    if not bookmark:
+        return False
+    db.delete(bookmark)
+    db.commit()
+    return True
