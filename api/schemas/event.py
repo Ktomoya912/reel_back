@@ -62,8 +62,7 @@ class EventReview(EventReviewBase):
         orm_mode = True
 
 
-class EventListView(BaseModel):
-    id: int
+class EventBase(BaseModel):
     name: str = Field(
         ...,
         example="イベント名",
