@@ -1,7 +1,5 @@
 import datetime
 
-from sqlalchemy import select
-from sqlalchemy.engine import Result
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
 
@@ -39,10 +37,8 @@ def update_event(
     db: Session, id: int, event_update: schemas.EventCreate
 ) -> models.Event:
     tags = event_update.tags
-    sql = select(models.Event).filter(models.Event.id == id)
-    result: Result = db.execute(sql)
-    event = result.scalar_one()
-    tag_crud.create_event_tags(db, event_update, tags)
+    event = get_event(db, id)
+    tag_crud.create_event_tags(db, event, tags)
     tmp = event_update.model_dump(exclude={"tags"})
     for key, value in tmp.items():
         setattr(event, key, value)
@@ -56,19 +52,18 @@ def get_event(db: Session, id: int) -> models.Event:
     return event
 
 
-def watch_event(db: Session, id: int, user_id: int) -> models.Event:
-    event = get_event(db, id)
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+def watch_event(db: Session, event_id: int, user_id: int) -> models.Event:
+    event = get_event(db, event_id)
     watched_users = (
         db.query(models.EventWatched)
         .filter(
-            models.EventWatched.user_id == user.id,
-            models.EventWatched.event_id == event.id,
+            models.EventWatched.user_id == user_id,
+            models.EventWatched.event_id == event_id,
         )
         .first()
     )
     if watched_users is None:
-        watched_users = models.EventWatched(user_id=user.id, event_id=event.id)
+        watched_users = models.EventWatched(user_id=user_id, event_id=event_id)
         db.add(watched_users)
     else:
         watched_users.count += 1
