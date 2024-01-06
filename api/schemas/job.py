@@ -1,100 +1,139 @@
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from .user import Company
+import api.schemas.tag as tag_schema
+from api.utils import get_jst_now
+
+sample_date = get_jst_now() + timedelta(days=1)
+start_time = sample_date.strftime("%Y-%m-%d %H:%M:%S")
+end_time = (sample_date + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
 
-class JobBase(BaseModel):
-    title: str
-    image_url: Optional[HttpUrl] = Field(
-        None,
-        example="https://example.com",
-        description="画像URL",
-    )
-    salary: int = Field(
-        ...,
-        example=1000,
-        description="給与",
-    )
-    working_hours: str = Field(
-        ...,
-        example="10:00~19:00",
-        description="勤務時間",
-    )
-    working_location: str = Field(
-        ...,
-        example="東京都",
-        description="勤務地",
-    )
-    description: str = Field(
-        ...,
-        example="◯◯の開発をお願いします。",
-        description="仕事内容",
-    )
-    is_one_day: bool = Field(
-        False,
-        example=True,
-        description="1日のみかどうか",
-    )
-    period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
-    additional_message: str = Field(
-        ...,
-        example="初心者歓迎！",
-        description="追加メッセージ",
-    )
+class JobTimeBase(BaseModel):
+    start_time: datetime = Field(..., example=start_time, description="開始日時")
+    end_time: datetime = Field(..., example=end_time, description="終了日時")
 
 
-class Job(JobBase):
+class JobTimeCreate(JobTimeBase):
+    pass
+
+
+class JobTime(JobTimeBase):
     id: int
-    company: Optional[Company] = None
-    tags: Optional[list] = Field(
-        [],
-        example=[],
-        description="タグ",
-    )
-    bookmark_users: Optional[list] = Field(
-        [],
-        example=[],
-        description="ブックマークしたユーザー",
-    )
-    reviews: Optional[list] = Field(
-        [],
-        example=[],
-        description="レビュー",
-    )
-    applicants: Optional[list] = Field(
-        [],
-        example=[],
-        description="応募者",
-    )
-    watch_users: Optional[list] = Field(
-        [],
-        example=[],
-        description="閲覧したユーザー",
-    )
-    created_at: Optional[str] = Field(
-        None,
-        example="2021-01-01 00:00:00",
-        description="作成日時",
-    )
-    updated_at: Optional[str] = Field(
-        None,
-        example="2021-01-01 00:00:00",
-        description="更新日時",
-    )
 
     class Config:
         orm_mode = True
 
 
-class JobCreate(JobBase):
+class JobReviewBase(BaseModel):
+    title: str = Field(
+        ...,
+        example="タイトル",
+        description="タイトル",
+        min_length=1,
+        max_length=20,
+    )
+    review: str = Field(
+        ...,
+        example="レビュー",
+        description="レビュー",
+        min_length=1,
+        max_length=1000,
+    )
+    review_point: int = Field(
+        ...,
+        example=5,
+        description="レビューポイント",
+        ge=1,
+        le=5,
+    )
+
+
+class JobReviewCreate(JobReviewBase):
     pass
 
 
-class JobCreateResponse(JobCreate):
+class JobReview(JobReviewBase):
     id: int
+
+    class Config:
+        orm_mode = True
+
+
+class JobBase(BaseModel):
+    name: str
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
+    )
+
+
+class JobListView(JobBase):
+    id: int = Field(..., example=1, description="求人ID")
+    status: Optional[str] = Field(..., example="1", description="求人ステータス")
+    job_times: List[JobTime]
+
+
+class JobCreate(JobBase):
+    salary: str = Field(
+        ...,
+        example="時給1000円",
+        description="給与",
+        min_length=1,
+    )
+    working_location: str = Field(
+        ...,
+        example="高知県香美市",
+        description="勤務地",
+    )
+    description: str = Field(
+        ...,
+        example="説明",
+        description="説明",
+        min_length=1,
+    )
+    is_one_day: bool = Field(
+        ...,
+        example=True,
+        description="1日のみ",
+    )
+    additional_message: str = Field(
+        ...,
+        example="追加メッセージ",
+        description="追加メッセージ",
+        min_length=1,
+    )
+    image_url: Optional[HttpUrl] = Field(
+        None,
+        example="https://example.com",
+        description="画像URL",
+    )
+    tags: Optional[list[tag_schema.TagCreate]] = Field(
+        ...,
+        description="タグ",
+    )
+    job_times: list[JobTimeCreate] = Field(
+        ...,
+        description="勤務時間",
+    )
+
+
+class Job(JobListView, JobCreate):
+    tags: Optional[list[tag_schema.Tag]] = Field(
+        ...,
+        description="タグ",
+    )
+    bookmark_users: Optional[list] = Field(
+        ...,
+        description="ブックマークしたユーザー",
+    )
+    reviews: Optional[list[JobReview]] = Field(
+        ...,
+        description="レビュー",
+    )
 
     class Config:
         orm_mode = True

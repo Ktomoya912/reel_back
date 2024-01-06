@@ -8,6 +8,7 @@ import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.dependencies import (
+    common_parameters,
     get_admin_user,
     get_company_user,
     get_current_active_user,
@@ -15,24 +16,6 @@ from api.dependencies import (
 )
 
 router = APIRouter(prefix="/events", tags=["events"])
-
-
-def common_parameters(
-    db: Session = Depends(get_db),
-    keyword: str = "",
-    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
-    order: str = "asc",
-    offset: int = 0,
-    limit: int = 20,
-):
-    return {
-        "db": db,
-        "sort": sort,
-        "order": order,
-        "offset": offset,
-        "limit": limit,
-        "keyword": keyword,
-    }
 
 
 @router.post("/", response_model=schemas.EventListView)

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -33,6 +33,24 @@ def get_test_config():
 
 def get_db(request: Request) -> Session:
     return request.state.db
+
+
+def common_parameters(
+    db: Session = Depends(get_db),
+    keyword: str = "",
+    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
+    order: str = "asc",
+    offset: int = 0,
+    limit: int = 20,
+):
+    return {
+        "db": db,
+        "sort": sort,
+        "order": order,
+        "offset": offset,
+        "limit": limit,
+        "keyword": keyword,
+    }
 
 
 def get_current_user(
