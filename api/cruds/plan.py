@@ -38,7 +38,7 @@ def delete_plan(db: Session, plan_id: int) -> Literal[True]:
 def purchase_plan(
     db: Session, plan: schemas.PurchaseCreate, current_user: schemas.User
 ) -> models.Purchase:
-    purchase = models.Purchase(user=current_user, **plan.model_dump())
+    purchase = models.Purchase(user_id=current_user.id, **plan.model_dump())
     db.add(purchase)
     db.commit()
     db.refresh(purchase)

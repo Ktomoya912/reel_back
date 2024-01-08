@@ -41,6 +41,20 @@ def api_path():
     return "/api/v1"
 
 
+@pytest.fixture
+def db_session():
+    engine = create_engine(
+        TEST_DB_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+    session = Session()
+    yield session
+    session.close()
+
+
 def get_test_app():
     app = create_app()
     engine = create_engine(
