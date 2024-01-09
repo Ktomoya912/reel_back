@@ -38,7 +38,7 @@ Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl
 ### Gitリポジトリのクローン
 UbuntuもしくはMacのターミナル上で以下のコマンドを実行する。
 ```shell
-$ git clone https://github.com/Ktomoya912/reel_back.git
+$ git clone github:Ktomoya912/reel_back.git
 ```
 <details><summary>失敗した場合</summary>
 認証失敗のエラーが出た場合、SSHでクローンを行うようにする。
