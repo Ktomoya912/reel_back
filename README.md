@@ -152,6 +152,23 @@ $ docker compose build --no-cache
 $ docker compose exec demo-app poetry run python -m api.migrate_db
 ```
 
+マイグレーションを行った際に、`TypeError`などと出力された場合は`.env`ファイルに、
+それぞれ必要となるデータを宣言する必要がある。
+
+`.env`ファイルに記述された内容が環境変数に読み込まれる。
+```python
+os.getenv("SAMPLE")
+```
+上のような記述であれば、
+```plain
+SAMPLE="sample"
+```
+"sample"として読み取られる。
+`.env`ファイルを保存するときに権限エラーが出ると思われるがその時は以下のコマンドを打つことによって解決することができる。
+```bash
+$ sudo chown -R [username]:[username] ./
+```
+
 ### MySQLの操作
 以下のコマンドを実行することでMySQLのコンテナに入ることができる。
 ```shell
