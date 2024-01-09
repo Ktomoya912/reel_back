@@ -110,7 +110,7 @@ $ git clone github:Ktomoya912/reel_back.git
 
 ```shell
 $ cd reel_back
-$ docker-compose build
+$ docker compose build
 ```
 
 <details><summary>学内の有線の場合</summary>
@@ -126,7 +126,7 @@ export https_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
 ### 必要ライブラリのインストール
 このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
 ```shell
-$ docker-compose run --entrypoint "poetry install --no-root" demo-app
+$ docker compose run --entrypoint "poetry install --no-root" demo-app
 ```
 
 ## コンテナの起動と操作
@@ -134,25 +134,34 @@ $ docker-compose run --entrypoint "poetry install --no-root" demo-app
 以下のコマンドを実行することでAPIが立ち上がる。
 実際にlocalhost:8000/docsにアクセスするとAPIのドキュメントが表示される。
 ```shell
-$ docker-compose up
+$ docker compose up
+```
+この際に`ModuleNotFoundError`が出た場合には、コンテナを起動した状態で以下のコマンドを入力する。
+```shell
+$ docker compose exec demo-app poetry lock
+$ docker compose exec demo-app poetry install --no-root
+```
+上記の内容を行い、`ERROR: Error loading ASGI app. Attribute "app" not found in module "api.main".`というエラーが出た場合はDockerのイメージを再ビルドする必要がある。そのため、Dockerのコンテナを終了し、以下のコマンドを入力する。
+```shell
+$ docker compose build --no-cache
 ```
 
 ### データベースのマイグレーション
 コンテナが立ち上がった状態で以下のコマンドを実行することでデータベースのマイグレーションが行われる。
 ```shell
-$ docker-compose exec demo-app poetry run python -m api.migrate_db
+$ docker compose exec demo-app poetry run python -m api.migrate_db
 ```
 
 ### MySQLの操作
 以下のコマンドを実行することでMySQLのコンテナに入ることができる。
 ```shell
-$ docker-compose exec db bash -c "mysql"
+$ docker compose exec db bash -c "mysql"
 ```
 
 ### APIのテスト
 以下のコマンドを実行することでテストが実行される。
 ```shell
-$ docker-compose run --entrypoint "poetry run pytest" demo-app
+$ docker compose run --entrypoint "poetry run pytest" demo-app
 ```
 
 ## デプロイ
