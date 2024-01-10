@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
 
 import api.cruds.plan as plan_crud
@@ -42,7 +42,10 @@ def delete_plan(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_admin_user),
 ):
-    return plan_crud.delete_plan(db, plan_id)
+    if plan_crud.delete_plan(db, plan_id):
+        return True
+    else:
+        raise HTTPException(status_code=404, detail="Plan not found")
 
 
 @router.post("/purchase", response_model=schemas.Purchase)
@@ -60,7 +63,10 @@ def cancel_plan(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_company_user),
 ):
-    return plan_crud.cancel_plan(db, purchase_id)
+    if plan_crud.cancel_plan(db, purchase_id):
+        return True
+    else:
+        raise HTTPException(status_code=404, detail="purchase not found")
 
 
 @router.get("/no-paid", response_model=list[schemas.Purchase])
