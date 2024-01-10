@@ -38,7 +38,7 @@ Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl
 ### Gitリポジトリのクローン
 UbuntuもしくはMacのターミナル上で以下のコマンドを実行する。
 ```shell
-$ git clone https://github.com/Ktomoya912/reel_back.git
+$ git clone github:Ktomoya912/reel_back.git
 ```
 <details><summary>失敗した場合</summary>
 認証失敗のエラーが出た場合、SSHでクローンを行うようにする。
@@ -110,7 +110,7 @@ $ git clone github:Ktomoya912/reel_back.git
 
 ```shell
 $ cd reel_back
-$ docker-compose build
+$ docker compose build
 ```
 
 <details><summary>学内の有線の場合</summary>
@@ -126,7 +126,7 @@ export https_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
 ### 必要ライブラリのインストール
 このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
 ```shell
-$ docker-compose run --entrypoint "poetry install --no-root" demo-app
+$ docker compose run --entrypoint "poetry install --no-root" demo-app
 ```
 
 ## コンテナの起動と操作
@@ -134,25 +134,51 @@ $ docker-compose run --entrypoint "poetry install --no-root" demo-app
 以下のコマンドを実行することでAPIが立ち上がる。
 実際にlocalhost:8000/docsにアクセスするとAPIのドキュメントが表示される。
 ```shell
-$ docker-compose up
+$ docker compose up
+```
+この際に`ModuleNotFoundError`が出た場合には、コンテナを起動した状態で以下のコマンドを入力する。
+```shell
+$ docker compose exec demo-app poetry lock
+$ docker compose exec demo-app poetry install --no-root
+```
+上記の内容を行い、`ERROR: Error loading ASGI app. Attribute "app" not found in module "api.main".`というエラーが出た場合はDockerのイメージを再ビルドする必要がある。そのため、Dockerのコンテナを終了し、以下のコマンドを入力する。
+```shell
+$ docker compose build --no-cache
 ```
 
 ### データベースのマイグレーション
 コンテナが立ち上がった状態で以下のコマンドを実行することでデータベースのマイグレーションが行われる。
 ```shell
-$ docker-compose exec demo-app poetry run python -m api.migrate_db
+$ docker compose exec demo-app poetry run python -m api.migrate_db
+```
+
+マイグレーションを行った際に、`TypeError`などと出力された場合は`.env`ファイルに、
+それぞれ必要となるデータを宣言する必要がある。
+
+`.env`ファイルに記述された内容が環境変数に読み込まれる。
+```python
+os.getenv("SAMPLE")
+```
+上のような記述であれば、
+```plain
+SAMPLE="sample"
+```
+"sample"として読み取られる。
+`.env`ファイルを保存するときに権限エラーが出ると思われるがその時は以下のコマンドを打つことによって解決することができる。
+```bash
+$ sudo chown -R [username]:[username] ./
 ```
 
 ### MySQLの操作
 以下のコマンドを実行することでMySQLのコンテナに入ることができる。
 ```shell
-$ docker-compose exec db bash -c "mysql"
+$ docker compose exec db bash -c "mysql"
 ```
 
 ### APIのテスト
 以下のコマンドを実行することでテストが実行される。
 ```shell
-$ docker-compose run --entrypoint "poetry run pytest" demo-app
+$ docker compose run --entrypoint "poetry run pytest" demo-app
 ```
 
 ## デプロイ
