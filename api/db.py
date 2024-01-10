@@ -1,7 +1,11 @@
 import os
 import re
+from datetime import date
 
+from dotenv import load_dotenv
+from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, create_engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -20,6 +24,12 @@ engine = create_engine(DB_URL, echo=True)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+
+class NoEnvironmentError(Exception):
+    def __init__(self, message=""):
+        self.message = f'環境変数が設定されていません。\n".env"ファイルに"{message}"を設定してください。'
+        super().__init__(self.message)
 
 
 class BaseModel(Base):
@@ -51,3 +61,29 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
+
+
+def make_admin_user():
+    from api.models import user
+
+    load_dotenv()
+    if os.getenv("ADMIN_PASSWORD") is None:
+        raise NoEnvironmentError("ADMIN_PASSWORD")
+    if os.getenv("ADMIN_EMAIL") is None:
+        raise NoEnvironmentError("ADMIN_EMAIL")
+    db = next(get_db())
+    admin_user = user.User(
+        username="admin",
+        password=CryptContext(schemes=["bcrypt"], deprecated="auto").hash(
+            os.getenv("ADMIN_PASSWORD")
+        ),
+        email=os.getenv("ADMIN_EMAIL"),
+        birthday=date(2000, 1, 1),
+        user_type="a",
+        is_active=True,
+    )
+    db.add(admin_user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
