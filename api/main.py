@@ -17,7 +17,7 @@ def initialize():
     if os.getenv("SECRET_KEY") is None:
         with open(env_file, "a", encoding="utf-8") as f:
             f.write(f"SECRET_KEY={secrets.token_hex(32)}\n")
-        raise Exception("SECRET_KEYを設定しました。再起動を行ってください。")
+        load_dotenv(dotenv_path=env_file)
 
 
 def create_app():

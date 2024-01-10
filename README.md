@@ -1,29 +1,16 @@
-# REEL Project Backend
-## 目次
-- [APIの仕様書](document.md)
-- [概要](#概要)
-- [環境構築](#環境構築)
-  - [Dockerのインストール](#dockerのインストール)
-  - [Gitリポジトリのクローン](#gitリポジトリのクローン)
-  - [SSHの鍵の作成](#sshの鍵の作成)
-    - [GitHubに公開鍵を登録](#githubに公開鍵を登録)
-    - [configファイルの作成](#configファイルの作成)
-    - [リポジトリのクローン](#リポジトリのクローン)
-  - [必要ライブラリのインストール](#必要ライブラリのインストール)
-- [コンテナの起動と操作](#コンテナの起動と操作)
-  - [実行](#実行)
-  - [データベースのマイグレーション](#データベースのマイグレーション)
-  - [MySQLの操作](#mysqlの操作)
-  - [APIのテスト](#apiのテスト)
-- [参考](#参考)
-## 概要
-REELプロジェクトのバックエンドのリポジトリ。
+# REEL Project FastAPI
+[![Dockerized Python application test](https://github.com/Ktomoya912/reel_back/actions/workflows/test_api.yml/badge.svg)](https://github.com/Ktomoya912/reel_back/actions/workflows/test_api.yml)
 
-## 環境構築
-### Dockerのインストール
-初めに[Docker Desktop](https://www.docker.com/products/docker-desktop/)のインストールを行う。  
-Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl/install)のインストールが必要になる。
-<details><summary>WSL2のインストール</summary>
+
+
+# 必要なソフトウェア
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- [WSL2(Windowsの場合)](https://docs.microsoft.com/ja-jp/windows/wsl/install-win10)
+- [Git](https://git-scm.com/downloads)
+- [Visual Studio Code](https://azure.microsoft.com/ja-jp/products/visual-studio-code/)
+
+# 環境構築
+## WSL2のインストール
 
 ```PowerShell
 # 以下のコマンドでWSL2のインストールを行う
@@ -33,13 +20,14 @@ Windowsの場合は追加で[wsl2](https://learn.microsoft.com/ja-jp/windows/wsl
 ```
 ターミナル上でwslと入力するか、Ubuntuを直接起動するとUbuntuのターミナルが立ち上がる。Ubuntuのターミナルが起動すると初回起動時にユーザー名とパスワードの入力を求められるので入力する。  
 以上でWSL2のインストールは完了する。
-</details>
 
-### Gitリポジトリのクローン
+## Gitリポジトリのクローン
+[このページ](https://github.com/Ktomoya912/reel_back)のCodeボタンを押してSSHのリンクをコピーする。
 UbuntuもしくはMacのターミナル上で以下のコマンドを実行する。
 ```shell
-$ git clone github:Ktomoya912/reel_back.git
+$ git clone git@github.com:Ktomoya912/reel_back.git
 ```
+
 <details><summary>失敗した場合</summary>
 認証失敗のエラーが出た場合、SSHでクローンを行うようにする。
 初めにSSHの鍵を作成する。
@@ -47,6 +35,7 @@ $ git clone github:Ktomoya912/reel_back.git
 ### SSHの鍵の作成
 
 ```shell
+$ cd ~
 $ mkdir .ssh
 $ cd .ssh
 $ ssh-keygen -t rsa
@@ -106,12 +95,22 @@ $ git clone github:Ktomoya912/reel_back.git
 
 これでリポジトリがクローンされる。
 
-続いてクローンしたリポジトリに移動し、Dockerイメージのビルドを行う。
+続いてクローンしたリポジトリに移動し、Dockerイメージのビルドとコンテナの起動を行う。
 
 ```shell
 $ cd reel_back
-$ docker compose build
+$ docker compose up
 ```
+
+上記コマンド実行後、以下のようなメッセージが表示され、シェルを一つ占有する。
+```shell
+reel_back-demo-app-1  | INFO:     Started server process [10]
+reel_back-demo-app-1  | INFO:     Waiting for application startup.
+reel_back-demo-app-1  | INFO:     Application startup complete.
+```
+
+以上のメッセージが表示されたら、APIの立ち上げは完了である。
+
 
 <details><summary>学内の有線の場合</summary>
 Proxyの関係でビルドが失敗する場合がある。その場合は~/.bashrcに以下の内容を追記し、ターミナルを再起動する。
@@ -123,65 +122,38 @@ export https_proxy=http://proxy.noc.kochi-tech.ac.jp:3128
 これで再度試してほしい。
 </details>
 
-### 必要ライブラリのインストール
-このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
-```shell
-$ docker compose run --entrypoint "poetry install --no-root" demo-app
-```
+# APIのドキュメント
+コンテナを起動した状態で`http://localhost:8000/docs`にアクセスするとAPIのドキュメントが表示される。
+必要となるデータや、レスポンスの形式などが記述されている。
 
-## コンテナの起動と操作
-### 実行
-以下のコマンドを実行することでAPIが立ち上がる。
-実際にlocalhost:8000/docsにアクセスするとAPIのドキュメントが表示される。
-```shell
-$ docker compose up
-```
-この際に`ModuleNotFoundError`が出た場合には、コンテナを起動した状態で以下のコマンドを入力する。
-```shell
-$ docker compose exec demo-app poetry lock
-$ docker compose exec demo-app poetry install --no-root
-```
-上記の内容を行い、`ERROR: Error loading ASGI app. Attribute "app" not found in module "api.main".`というエラーが出た場合はDockerのイメージを再ビルドする必要がある。そのため、Dockerのコンテナを終了し、以下のコマンドを入力する。
-```shell
-$ docker compose build --no-cache
-```
-
-### データベースのマイグレーション
-コンテナが立ち上がった状態で以下のコマンドを実行することでデータベースのマイグレーションが行われる。
-```shell
-$ docker compose exec demo-app poetry run python -m api.migrate_db
-```
-
-マイグレーションを行った際に、`TypeError`などと出力された場合は`.env`ファイルに、
-それぞれ必要となるデータを宣言する必要がある。
-
-`.env`ファイルに記述された内容が環境変数に読み込まれる。
-```python
-os.getenv("SAMPLE")
-```
-上のような記述であれば、
-```plain
-SAMPLE="sample"
-```
-"sample"として読み取られる。
-`.env`ファイルを保存するときに権限エラーが出ると思われるがその時は以下のコマンドを打つことによって解決することができる。
-```bash
-$ sudo chown -R [username]:[username] ./
-```
-
-### MySQLの操作
-以下のコマンドを実行することでMySQLのコンテナに入ることができる。
-```shell
-$ docker compose exec db bash -c "mysql"
-```
-
-### APIのテスト
-以下のコマンドを実行することでテストが実行される。
+# APIのテスト
+APIのテストは以下のコマンドを実行することで行うことができる。
 ```shell
 $ docker compose run --entrypoint "poetry run pytest" demo-app
 ```
 
-## デプロイ
+# APIの実行
+APIの実行の一例を示す。詳しくはAPIのドキュメントを参照すること。
+
+## ユーザーの作成
+```shell
+$ curl -X 'POST' \
+  'http://localhost:8000/api/v1/users/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "password": "password",
+  "username": "username",
+  "image_url": "https://example.com",
+  "email": "my@example.com",
+  "sex": "o",
+  "birthday": "2024-01-10",
+  "user_type": "g"
+}'
+```
+このコマンドの説明を行う。`curl`はコマンドラインからHTTPリクエストを送信するためのコマンドである。`-X`オプションはHTTPメソッドを指定する。メソッドは`GET`, `POST`, `PUT`, `DELETE`などがある。`-H`オプションはHTTPヘッダーを指定する。`-d`オプションはHTTPボディを指定する。`-d`オプションで指定するデータはJSON形式である。
+
+# デプロイ
 デプロイはAWSのEC2を使用して行う。
 EC2上で、このリポジトリをクローンし、以下のコマンドを実行することでデプロイが行われる。
 ```shell
@@ -195,18 +167,32 @@ docker run -d -p 8000:8000 --name reel-back reel-back:latest
 
 以上でデプロイは完了する。
 
-## 参考
+# 各種エラーの対処法
+## 起動時に`ModuleNotFoundError: No module named 'xxxx'`と出る
+このエラーが出る原因は、Dockerイメージのビルド時に必要なパッケージがインストールされていないためである。
+このエラーが出た場合は、以下のコマンドを実行する。
+```shell
+$ docker compose build --no-cache
+```
+
+## APIを叩いた際に`SQLAlchemyError: (sqlite3.OperationalError) no such table: xxx`と出る
+このエラーが出る原因は、データベースのテーブルが作成されていないためである。そのためデータベースのマイグレーションを行う必要がある。
+コンテナを実行した状態で以下のコマンドを実行する。
+```shell
+$ docker compose exec demo-app poetry run python -m api.migrate_db
+```
+
+## APIを叩いた際に`NoEnvironmentError: 環境変数が設定されていません。".env"ファイルに"{message}"を設定してください。`と出る
+このエラーが出る原因は、`.env`ファイルに必要な環境変数が設定されていないためである。また、初回起動時に`.env`ファイルがDockerによって生成されるため権限によって保存できない場合がある。そのため、以下のコマンドを実行し、所有者を変更する。
+```shell
+$ sudo chown -R [username]:[username] ./
+```
+`[username]`には自分のユーザー名を入力する。
+
+# 参考
 - [FastAPI入門](https://zenn.dev/sh0nk/books/537bb028709ab9)  
-    基本はここに書かれているのでここを参照すると作業が捗る。
+    作業の最初の方はこのページを参照していたが、のちに大きく変更を加えたため、参考になる部分と参考にならない部分がある。
 - [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/ja/tutorial/)  
-    ちょっと難しいけど、ここに書かれていることを理解するとより深くFastAPIを使いこなせるようになる。
+    公式のドキュメントであるため、情報量が多い。また、日本語に対応しているページも存在するため、よく読むことをお勧めする。
 - [SQLAlchemyとFastAPIのリレーション](https://qiita.com/shimi7o/items/c009014b864c4412884a)  
     SQLAlchemyでのリレーションの書き方がわからない場合はここを参照すると良い。
-
-## その他
-### 詰まったこと
- ```fastapi.exceptions.ResponseValidationError: <exception str() failed>```というエラーが出た場合、モデルインスタンスを用いる前に(return objなど)
-```python
-await db.reflesh(obj)
-```
-を行うことで解決する。
