@@ -1,5 +1,7 @@
 from typing import Literal
 
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.session import Session
 
 from api import models, schemas
@@ -13,6 +15,11 @@ def create_plan(db: Session, plan_create: schemas.PlanCreate) -> models.Plan:
     return plan
 
 
+def get_plan(db: Session, plan_id: int) -> models.Plan:
+    plan = db.query(models.Plan).get(plan_id)
+    return plan
+
+
 def get_plans(db: Session) -> list[models.Plan]:
     plans = db.query(models.Plan).all()
     return plans
@@ -22,7 +29,9 @@ def update_plan(
     db: Session, plan_id: int, plan_update: schemas.PlanUpdate
 ) -> models.Plan:
     plan = db.query(models.Plan).get(plan_id)
-    plan.update(**plan_update.model_dump())
+    schema = plan_update.model_dump(exclude_unset=True)
+    for key, value in schema.items():
+        setattr(plan, key, value)
     db.commit()
     db.refresh(plan)
     return plan
@@ -39,9 +48,12 @@ def purchase_plan(
     db: Session, plan: schemas.PurchaseCreate, current_user: schemas.User
 ) -> models.Purchase:
     purchase = models.Purchase(user_id=current_user.id, **plan.model_dump())
-    db.add(purchase)
-    db.commit()
-    db.refresh(purchase)
+    try:
+        db.add(purchase)
+        db.commit()
+        db.refresh(purchase)
+    except IntegrityError:
+        raise HTTPException(status_code=404, detail="Plan not found")
     return purchase
 
 
