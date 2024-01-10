@@ -1,9 +1,7 @@
 import os
 import re
-from datetime import datetime, timedelta
 
-from sqlalchemy import Column, DateTime, Integer, create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy import Column, DateTime, create_engine
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -13,15 +11,9 @@ DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = os.getenv("DB_PORT", "3306")
-ASYNC_DB_URL = (
-    f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/demo?charset=utf8"
-)
+
 DB_URL = (
     f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/demo?charset=utf8"
-)
-async_engine = create_async_engine(ASYNC_DB_URL, echo=True)
-async_session = sessionmaker(
-    autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession
 )
 
 engine = create_engine(DB_URL, echo=True)
@@ -51,14 +43,6 @@ class BaseModel(Base):
 
     def to_dict(self):
         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
-
-
-async def get_async_db():
-    async with async_session() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
 
 
 def get_db() -> Session:
