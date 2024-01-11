@@ -75,4 +75,6 @@ class Event(BaseModel):
 
     @property
     def is_active(self):
+        if self.purchase is None:
+            return False
         return get_jst_now() < self.purchase.expiration_date

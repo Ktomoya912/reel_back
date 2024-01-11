@@ -44,7 +44,10 @@ class Job(BaseModel):
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
     salary = Column(String(255))
-    working_location = Column(String(255))
+    postal_code = Column(String(8))
+    prefecture = Column(String(10))
+    city = Column(String(255))
+    address = Column(String(255))
     description = Column(Text)
     is_one_day = Column(Boolean, default=False)
     additional_message = Column(Text)
@@ -69,4 +72,6 @@ class Job(BaseModel):
 
     @property
     def is_active(self):
+        if self.purchase is None:
+            return False
         return get_jst_now() < self.purchase.expiration_date

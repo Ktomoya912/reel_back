@@ -8,7 +8,10 @@ class TestJob:
             json={
                 "name": "テスト求人",
                 "salary": "時給1000円",
-                "working_location": "高知県香美市",
+                "postal_code": "782-8502",
+                "prefecture": "高知県",
+                "city": "香美市",
+                "address": "土佐山田町宮ノ口185",
                 "description": "説明",
                 "is_one_day": True,
                 "additional_message": "追加メッセージ",
@@ -46,7 +49,10 @@ class TestJob:
             json={
                 "name": "テスト求人1",
                 "salary": "時給1000円",
-                "working_location": "高知県香美市",
+                "postal_code": "782-8502",
+                "prefecture": "高知県",
+                "city": "香美市",
+                "address": "土佐山田町宮ノ口185",
                 "description": "説明",
                 "is_one_day": True,
                 "additional_message": "追加メッセージ",

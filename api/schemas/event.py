@@ -100,7 +100,7 @@ class EventCreate(EventBase):
     address: str = Field(
         ...,
         example="土佐山田町宮ノ口185",
-        description="番地",
+        description="番地・建物名",
         max_length=100,
     )
     phone_number: str = Field(
@@ -143,6 +143,12 @@ class EventCreate(EventBase):
         description="説明",
         max_length=1000,
     )
+    caution: str = Field(
+        ...,
+        example="",
+        description="注意事項",
+        max_length=1000,
+    )
     tags: Optional[List[tag_schema.TagCreate]]
     event_times: List[EventTimeCreate]
 
@@ -154,8 +160,7 @@ class EventCreateResponse(EventCreate):
     id: int = Field(..., example=1, description="イベントID")
 
 
-class EventListView(EventCreate):
-    id: int = Field(..., example=1, description="イベントID")
+class EventListView(EventCreateResponse):
     status: Optional[str] = Field(..., example="1", description="イベントステータス")
     event_times: List[EventTime]
     tags: Optional[List[tag_schema.Tag]]

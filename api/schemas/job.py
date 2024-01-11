@@ -82,10 +82,30 @@ class JobCreate(JobBase):
         description="給与",
         min_length=1,
     )
-    working_location: str = Field(
+    postal_code: str = Field(
         ...,
-        example="高知県香美市",
-        description="勤務地",
+        example="782-8502",
+        description="郵便番号",
+        min_length=7,
+        max_length=8,
+    )
+    prefecture: str = Field(
+        ...,
+        example="高知県",
+        description="都道府県",
+        max_length=5,
+    )
+    city: str = Field(
+        ...,
+        example="香美市",
+        description="市区町村",
+        max_length=20,
+    )
+    address: str = Field(
+        ...,
+        example="土佐山田町宮ノ口185",
+        description="番地・建物名",
+        max_length=100,
     )
     description: str = Field(
         ...,
