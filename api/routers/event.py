@@ -7,9 +7,13 @@ import api.cruds.event as event_crud
 import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
-from api.dependencies import (common_parameters, get_admin_user,
-                              get_company_user, get_current_active_user,
-                              get_db)
+from api.dependencies import (
+    common_parameters,
+    get_admin_user,
+    get_company_user,
+    get_current_active_user,
+    get_db,
+)
 
 router = APIRouter(prefix="/events", tags=["events"])
 

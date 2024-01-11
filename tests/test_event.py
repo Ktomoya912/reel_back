@@ -82,4 +82,4 @@ class TestEvent:
     def test_delete_event(self, company_client: TestClient, api_path: str):
         response = company_client.delete(f"{api_path}/events/1")
         assert response.status_code == 200, response.text
-        assert response.json() == {"message": "Deleted successfully"}
+        assert response.json() == {"message": "Event Deleted"}
