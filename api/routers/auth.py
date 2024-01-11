@@ -62,16 +62,19 @@ def send_verification_email(
     )
     html_file = Path(__file__).parent.parent / "templates" / "verify-email.html"
     html = Template(html_file.read_text())
-    background_tasks.add_task(
-        send_email,
-        from_=settings.MAIL_SENDER,
-        to=email,
-        subject="Verify your email",
-        body=html.render(
-            username=user.username,
-            url=request.url_for("email_confirmation", token=token),
-        ),
-    )
+    if getattr(settings, "MAIL_PASSWORD", None):
+        background_tasks.add_task(
+            send_email,
+            from_=settings.MAIL_SENDER,
+            to=email,
+            subject="Verify your email",
+            body=html.render(
+                username=user.username,
+                url=request.url_for("email_confirmation", token=token),
+            ),
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Mail server not configured")
     return "Email sent"
 
 
