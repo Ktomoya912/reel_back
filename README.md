@@ -175,6 +175,18 @@ docker run -d -p 8000:8000 --name reel-back reel-back:latest
 以上でデプロイは完了する。
 
 # 各種エラーの対処法
+## userのis_activeがfalseのままになっている
+これは、メール認証が行われていないため、is_activeがfalseのままになっている。メール認証が行えるようにするためには、`.env`ファイルに
+"MAIL_PASSWORD"と"MAIL_SENDER"を設定する必要がある。
+以下、Gmailでの設定方法を示す。
+はじめに、[このページ](https://note.com/noa813/n/nde0116fcb03f)に沿って、Googleアカウントの設定を行う。
+次に、`.env`ファイルに以下の内容を追記する。
+```plain
+MAIL_SENDER="gmailのメールアドレス"
+MAIL_PASSWORD="先ほどの流れで入手したアプリパスワード(googleのパスワードではない!!!)"
+```
+以上でメール認証が行えるようになる。
+
 ## 起動時に`ModuleNotFoundError: No module named 'xxxx'`と出る
 このエラーが出る原因は、Dockerイメージのビルド時に必要なパッケージがインストールされていないためである。
 このエラーが出た場合は、以下のコマンドを実行する。

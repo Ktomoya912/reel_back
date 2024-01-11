@@ -55,7 +55,7 @@ def create_user_company(
     return user
 
 
-@router.get("", response_model=list[schemas.User])
+@router.get("/", response_model=list[schemas.User])
 def get_users(db: Session = Depends(get_db)):
     return user_crud.get_users(db)
 
