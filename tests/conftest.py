@@ -10,29 +10,33 @@ from api.dependencies import get_config, get_current_user, get_db, get_test_conf
 from api.main import create_app
 
 TEST_DB_URL = "sqlite:///:memory:"
+engine = create_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base.metadata.create_all(bind=engine)
 
 
-class MockCompanyUser(BaseModel):
+class MockBaseUser(BaseModel):
     id: int = 1
     username: str = "username"
     password: str = "password"
     is_active: bool = True
+    job_bookmarks: list = []
+    event_bookmarks: list = []
+
+
+class MockCompanyUser(MockBaseUser):
     user_type: str = "c"
 
 
-class MockGeneralUser(BaseModel):
-    id: int = 1
-    username: str = "username"
-    password: str = "password"
-    is_active: bool = True
+class MockGeneralUser(MockBaseUser):
     user_type: str = "g"
 
 
-class MockAdminUser(BaseModel):
-    id: int = 1
-    username: str = "username"
-    password: str = "password"
-    is_active: bool = True
+class MockAdminUser(MockBaseUser):
     user_type: str = "a"
 
 
@@ -57,13 +61,6 @@ def db_session():
 
 def get_test_app():
     app = create_app()
-    engine = create_engine(
-        TEST_DB_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base.metadata.create_all(bind=engine)
 
     def get_test_db():
         session = Session()
