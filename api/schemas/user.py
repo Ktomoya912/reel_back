@@ -50,12 +50,18 @@ class TokenData(BaseModel):
     username: Union[str, None] = None
 
 
-class MailBody(BaseModel):
+class MailBase(BaseModel):
     email: EmailStr = Field(
         ...,
         example="my@example.com",
         description="メールアドレス",
     )
+
+    class Config:
+        orm_mode = True
+
+
+class MailBody(MailBase):
     subject: str = Field(
         ...,
         example="subject",
@@ -66,9 +72,6 @@ class MailBody(BaseModel):
         example="body",
         description="本文",
     )
-
-    class Config:
-        orm_mode = True
 
 
 class UserPasswordChange(BaseModel):
