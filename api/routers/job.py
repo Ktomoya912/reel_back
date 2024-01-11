@@ -30,20 +30,6 @@ def create_job(
     return job
 
 
-@router.post("/purchase-job", response_model=schemas.JobCreateResponse)
-def purchase_job(
-    current_user: Annotated[dict, Depends(get_current_active_user)],
-    purchase_data: schemas.JobArticleCreate,
-    db: Session = Depends(get_db),
-):
-    purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
-    job = create_job(current_user, purchase_data.job, db)
-    job.purchase = purchase
-    db.commit()
-    db.refresh(job)
-    return job
-
-
 @router.get("/", response_model=list[schemas.JobListView])
 def get_jobs(
     common: Annotated[dict, Depends(common_parameters)],
@@ -58,6 +44,11 @@ def get_jobs(
     else:
         data = job_crud.get_jobs(only_active=only_active, **common)
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
+
+
+@router.get("/recent/", response_model=list[schemas.JobListView])
+def get_recent_jobs(db: Session = Depends(get_db)):
+    return job_crud.get_recent_jobs(db)
 
 
 @router.get("/{job_id}", response_model=schemas.Job)
@@ -81,6 +72,17 @@ def update_job(
     return job_crud.update_job(db, job_id, job_update)
 
 
+@router.delete("/{job_id}")
+def delete_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_company_user),
+):
+    if job_crud.delete_job(db, job_id):
+        return {"message": "Deleted successfully"}
+    return {"message": "Failed to delete"}
+
+
 @router.put("/{job_id}/activate", response_model=schemas.JobListView)
 def activate_job(
     job_id: int,
@@ -94,20 +96,18 @@ def activate_job(
     return job
 
 
-@router.delete("/{job_id}")
-def delete_job(
-    job_id: int,
+@router.post("/purchase-job", response_model=schemas.JobCreateResponse)
+def purchase_job(
+    current_user: Annotated[dict, Depends(get_current_active_user)],
+    purchase_data: schemas.JobArticleCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_company_user),
 ):
-    if job_crud.delete_job(db, job_id):
-        return {"message": "Deleted successfully"}
-    return {"message": "Failed to delete"}
-
-
-@router.get("/recent/", response_model=list[schemas.JobListView])
-def get_recent_jobs(db: Session = Depends(get_db)):
-    return job_crud.get_recent_jobs(db)
+    purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
+    job = create_job(current_user, purchase_data.job, db)
+    job.purchase = purchase
+    db.commit()
+    db.refresh(job)
+    return job
 
 
 @router.post("/{job_id}/bookmark")

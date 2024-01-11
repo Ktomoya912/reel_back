@@ -30,20 +30,6 @@ def create_event(
     return event
 
 
-@router.post("/purchase-event", response_model=schemas.EventCreateResponse)
-def purchase_event(
-    current_user: Annotated[dict, Depends(get_current_active_user)],
-    purchase_data: schemas.EventArticleCreate,
-    db: Session = Depends(get_db),
-):
-    purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
-    event = create_event(current_user, purchase_data.event, db)
-    event.purchase = purchase
-    db.commit()
-    db.refresh(event)
-    return event
-
-
 @router.get("/", response_model=list[schemas.EventListView])
 def get_events(
     common: Annotated[dict, Depends(common_parameters)],
@@ -58,6 +44,11 @@ def get_events(
     else:
         data = event_crud.get_events(only_active=only_active, **common)
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
+
+
+@router.get("/recent/", response_model=list[schemas.EventListView])
+def get_recent_events(db: Session = Depends(get_db)):
+    return event_crud.get_recent_events(db)
 
 
 @router.get("/{event_id}", response_model=schemas.Event)
@@ -81,6 +72,17 @@ def update_event(
     return event_crud.update_event(db, event_id, event_update)
 
 
+@router.delete("/{event_id}")
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_company_user),
+):
+    if event_crud.delete_event(db, event_id):
+        return {"message": "Deleted successfully"}
+    return {"message": "Failed to delete"}
+
+
 @router.put("/{event_id}/activate", response_model=schemas.EventListView)
 def activate_event(
     event_id: int,
@@ -94,20 +96,18 @@ def activate_event(
     return event
 
 
-@router.delete("/{event_id}")
-def delete_event(
-    event_id: int,
+@router.post("/purchase-event", response_model=schemas.EventCreateResponse)
+def purchase_event(
+    current_user: Annotated[dict, Depends(get_current_active_user)],
+    purchase_data: schemas.EventArticleCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_company_user),
 ):
-    if event_crud.delete_event(db, event_id):
-        return {"message": "Deleted successfully"}
-    return {"message": "Failed to delete"}
-
-
-@router.get("/recent/", response_model=list[schemas.EventListView])
-def get_recent_events(db: Session = Depends(get_db)):
-    return event_crud.get_recent_events(db)
+    purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
+    event = create_event(current_user, purchase_data.event, db)
+    event.purchase = purchase
+    db.commit()
+    db.refresh(event)
+    return event
 
 
 @router.post("/{event_id}/bookmark")
