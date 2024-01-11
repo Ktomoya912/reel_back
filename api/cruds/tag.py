@@ -39,3 +39,21 @@ def create_event_tags(
     db.commit()
     db.refresh(event)
     return event
+
+
+def create_job_tags(
+    db: Session, job: models.Job, tags: list[schemas.TagCreate]
+) -> models.Job:
+    job.tags = []
+    for tag in tags:
+        models = get_tag_by_name(db, tag.name)
+        if models is None:
+            models = create_tag(db, tag)
+        try:
+            job.tags.append(models)
+            db.flush()
+        except Exception:
+            db.rollback()
+    db.commit()
+    db.refresh(job)
+    return job
