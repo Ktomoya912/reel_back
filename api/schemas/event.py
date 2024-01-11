@@ -59,6 +59,8 @@ class EventReviewCreate(EventReviewBase):
 class EventReview(EventReviewBase):
     id: int
     user: user_schema.User
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
