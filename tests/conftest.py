@@ -4,18 +4,19 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-
+from passlib.context import CryptContext
 from api.db import Base
 from api.dependencies import get_config, get_current_user, get_db, get_test_config
 from api.main import create_app
 
 TEST_DB_URL = "sqlite:///:memory:"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class MockBaseUser(BaseModel):
     id: int = 1
     username: str = "username"
-    password: str = "password"
+    password: str = pwd_context.hash("password")
     is_active: bool = True
     job_bookmarks: list = []
     event_bookmarks: list = []

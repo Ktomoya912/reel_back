@@ -72,4 +72,4 @@ class TestJob:
     def test_delete_job(self, company_client: TestClient, api_path: str):
         response = company_client.delete(f"{api_path}/jobs/1")
         assert response.status_code == 200, response.text
-        assert response.json() == {"message": "Job Deleted"}
+        assert response.json() == {"message": "Job deleted"}
