@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, Union
 
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr, Field, field_serializer
+from pydantic import BaseModel, EmailStr, Field
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -82,15 +82,11 @@ class UserPasswordChange(BaseModel):
         min_length=8,
     )
 
-    @field_serializer("password")
-    def password_hash(self, v: str):
-        return pwd_context.hash(v)
-
     class Config:
         orm_mode = True
 
 
-class UserBase(UserPasswordChange):
+class UserBase(BaseModel):
     username: str = Field(
         ...,
         example="username",
@@ -123,15 +119,18 @@ class UserBase(UserPasswordChange):
         pattern=r"[gca]",
     )
 
+    class Config:
+        orm_mode = True
+
+
+class UserCreate(UserBase, UserPasswordChange):
+    pass
+
 
 class User(UserBase):
     id: int
     company: Optional["Company"]
     is_active: bool
-
-
-class UserCreate(UserBase):
-    pass
 
 
 # 法人ユーザー登録用

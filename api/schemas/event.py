@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 import api.schemas.tag as tag_schema
+import api.schemas.user as user_schema
 from api.utils import get_jst_now
 
 sample_date = get_jst_now() + timedelta(days=1)
@@ -57,6 +58,7 @@ class EventReviewCreate(EventReviewBase):
 
 class EventReview(EventReviewBase):
     id: int
+    user: user_schema.User
 
     class Config:
         orm_mode = True
@@ -170,6 +172,7 @@ class Event(EventListView):
     # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
     reviews: Optional[List[EventReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
+    author: user_schema.User
 
 
 class BaseImpression(BaseModel):

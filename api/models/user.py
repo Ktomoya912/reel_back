@@ -31,7 +31,7 @@ class User(BaseModel):
     job_bookmarks = relationship(
         "Job", secondary="job_bookmarks", back_populates="bookmark_users"
     )
-    job_postings = relationship("Job", backref="created_by")
+    job_postings = relationship("Job", backref="author")
     job_watched = relationship(
         "Job",
         back_populates="watched_users",
@@ -42,7 +42,7 @@ class User(BaseModel):
     event_bookmarks = relationship(
         "Event", secondary="event_bookmarks", back_populates="bookmark_users"
     )
-    event_postings = relationship("Event", backref="created_by")
+    event_postings = relationship("Event", backref="author")
     event_watched = relationship(
         "Event",
         back_populates="watched_users",

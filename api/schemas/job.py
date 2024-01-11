@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_serializer
 
 import api.schemas.tag as tag_schema
+import api.schemas.user as user_schema
 from api.utils import get_jst_now
 
 sample_date = get_jst_now() + timedelta(days=1)
@@ -57,6 +58,7 @@ class JobReviewCreate(JobReviewBase):
 
 class JobReview(JobReviewBase):
     id: int
+    user: user_schema.User
 
     class Config:
         orm_mode = True
@@ -145,3 +147,4 @@ class JobListView(JobCreate):
 class Job(JobListView):
     reviews: Optional[List[JobReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
+    author: user_schema.User
