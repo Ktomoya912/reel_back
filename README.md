@@ -99,6 +99,13 @@ $ git clone github:Ktomoya912/reel_back.git
 
 ```shell
 $ cd reel_back
+$ docker compose build
+```
+
+## 必要ライブラリのインストール
+このコマンドを実行することで、pyproject.tomlに記述されている必要なライブラリがインストールされる。
+```shell
+$ docker compose run --entrypoint "poetry install --no-root" demo-app
 $ docker compose up
 ```
 
