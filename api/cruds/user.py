@@ -1,6 +1,6 @@
 from datetime import timedelta
 from typing import Optional, Union
-
+from fastapi import HTTPException
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm.session import Session
@@ -60,6 +60,7 @@ def create_user_company(
 ) -> models.User:
     """ユーザーと会社の作成"""
     tmp = user_create.model_dump()
+    tmp["password"] = pwd_context.hash(tmp["password"])
     company = create_company(db, user_create.company)
     tmp["company"] = company
     user = models.User(**tmp)
@@ -72,6 +73,7 @@ def create_user_company(
 def create_user(db: Session, user_create: schemas.UserCreate) -> models.User:
     """ユーザーの作成"""
     tmp = user_create.model_dump()
+    tmp["password"] = pwd_context.hash(tmp["password"])
     user = models.User(**tmp)
     db.add(user)
     db.commit()
@@ -81,33 +83,40 @@ def create_user(db: Session, user_create: schemas.UserCreate) -> models.User:
 
 def get_users(db: Session) -> list[models.User]:
     """ユーザー一覧の取得"""
-    users = db.query(models.User).all()
-    return users
+    return db.query(models.User).all()
 
 
 def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
     """ユーザー名からユーザー情報を取得"""
-    user = db.query(models.User).filter(models.User.username == username).first()
-    return user
+    return db.query(models.User).filter(models.User.username == username).first()
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     """メールアドレスからユーザー情報を取得"""
-    user = db.query(models.User).filter(models.User.email == email).first()
-    return user
+    return db.query(models.User).filter(models.User.email == email).first()
 
 
 def get_user(db: Session, user_id: int) -> Optional[models.User]:
     """idからユーザー情報を取得"""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    return user
+    return db.query(models.User).filter(models.User.id == user_id).first()
 
 
 def update_user(
     db: Session, user_create: schemas.UserCreate, original: models.User
 ) -> models.User:
-    update_data = user_create.model_dump(exclude_unset=True)
+    update_data = user_create.model_dump(
+        exclude_unset=True, exclude={"password", "company"}
+    )
     for key, value in update_data.items():
+        if (
+            key == "username"
+            and value != original.username
+            and get_user_by_username(db, value)
+        ):
+            raise HTTPException(status_code=400, detail="Username already registered")
+        if key == "email" and value != original.email and get_user_by_email(db, value):
+            raise HTTPException(status_code=400, detail="Email already registered")
+
         setattr(original, key, value)
     db.commit()
     db.refresh(original)
