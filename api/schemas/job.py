@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, field_serializer
 
 import api.schemas.tag as tag_schema
 from api.utils import get_jst_now
@@ -64,17 +64,15 @@ class JobReview(JobReviewBase):
 
 class JobBase(BaseModel):
     name: str
-    image_url: Optional[HttpUrl] = Field(
+    image_url: Optional[str] = Field(
         None,
         example="https://example.com",
         description="画像URL",
     )
 
-
-class JobListView(JobBase):
-    id: int = Field(..., example=1, description="求人ID")
-    status: Optional[str] = Field(..., example="1", description="求人ステータス")
-    job_times: List[JobTime]
+    @field_serializer("image_url")
+    def str_image_url(self, v: str):
+        return str(v)
 
 
 class JobCreate(JobBase):
@@ -106,34 +104,24 @@ class JobCreate(JobBase):
         description="追加メッセージ",
         min_length=1,
     )
-    image_url: Optional[HttpUrl] = Field(
-        None,
-        example="https://example.com",
-        description="画像URL",
-    )
-    tags: Optional[list[tag_schema.TagCreate]] = Field(
-        ...,
-        description="タグ",
-    )
-    job_times: list[JobTimeCreate] = Field(
-        ...,
-        description="勤務時間",
-    )
-
-
-class Job(JobListView, JobCreate):
-    tags: Optional[list[tag_schema.Tag]] = Field(
-        ...,
-        description="タグ",
-    )
-    bookmark_users: Optional[list] = Field(
-        ...,
-        description="ブックマークしたユーザー",
-    )
-    reviews: Optional[list[JobReview]] = Field(
-        ...,
-        description="レビュー",
-    )
+    tags: Optional[list[tag_schema.TagCreate]]
+    job_times: list[JobTimeCreate]
 
     class Config:
         orm_mode = True
+
+
+class JobCreateResponse(JobCreate):
+    id: int = Field(..., example=1, description="求人ID")
+
+
+class JobListView(JobCreate):
+    id: int = Field(..., example=1, description="求人ID")
+    status: Optional[str] = Field(..., example="1", description="イベントステータス")
+    job_times: List[JobTime]
+    tags: Optional[List[tag_schema.Tag]]
+
+
+class Job(JobListView):
+    reviews: Optional[List[JobReview]]
+    is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")

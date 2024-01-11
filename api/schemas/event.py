@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, Field
 
 import api.schemas.tag as tag_schema
 from api.utils import get_jst_now
@@ -70,17 +70,11 @@ class EventBase(BaseModel):
         min_length=5,
         max_length=100,
     )
-    image_url: Optional[HttpUrl] = Field(
+    image_url: Optional[str] = Field(
         None,
         example="https://example.com",
         description="画像URL",
     )
-
-
-class EventListView(EventBase):
-    id: int = Field(..., example=1, description="イベントID")
-    status: Optional[str] = Field(..., example="1", description="イベントステータス")
-    event_times: List[EventTime]
 
 
 class EventCreate(EventBase):
@@ -122,7 +116,7 @@ class EventCreate(EventBase):
         description="メールアドレス",
         max_length=100,
     )
-    homepage: Optional[HttpUrl] = Field(
+    homepage: Optional[str] = Field(
         ...,
         example="https://kochi-tech.ac.jp/",
         description="ホームページ",
@@ -156,10 +150,19 @@ class EventCreate(EventBase):
         orm_mode = True
 
 
-class Event(EventCreate, EventListView):
-    # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
-    tags: Optional[List[tag_schema.Tag]]
+class EventCreateResponse(EventCreate):
+    id: int = Field(..., example=1, description="イベントID")
+
+
+class EventListView(EventCreate):
+    id: int = Field(..., example=1, description="イベントID")
+    status: Optional[str] = Field(..., example="1", description="イベントステータス")
     event_times: List[EventTime]
+    tags: Optional[List[tag_schema.Tag]]
+
+
+class Event(EventListView):
+    # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
     reviews: Optional[List[EventReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
 

@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, Union
 
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_serializer
+from pydantic import BaseModel, EmailStr, Field, field_serializer
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -15,7 +15,7 @@ class CompanyBase(BaseModel):
     address: str
     phone_number: str
     email: EmailStr
-    homepage: Optional[HttpUrl] = Field(
+    homepage: Optional[str] = Field(
         "",
         example="https://example.com",
         description="ホームページ",
@@ -96,7 +96,7 @@ class UserBase(UserPasswordChange):
         max_length=16,
         pattern=r"[\w\-._]+",
     )
-    image_url: Optional[HttpUrl] = Field(
+    image_url: Optional[str] = Field(
         None,
         example="https://example.com",
         description="画像URL",

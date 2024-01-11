@@ -18,7 +18,7 @@ from api.dependencies import (
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-@router.post("/", response_model=schemas.EventListView)
+@router.post("/", response_model=schemas.EventCreateResponse)
 def create_event(
     current_user: Annotated[dict, Depends(get_company_user)],
     event_create: schemas.EventCreate,
@@ -30,7 +30,7 @@ def create_event(
     return event
 
 
-@router.post("/purchase-event", response_model=schemas.Event)
+@router.post("/purchase-event", response_model=schemas.EventCreateResponse)
 def purchase_event(
     current_user: Annotated[dict, Depends(get_current_active_user)],
     purchase_data: schemas.EventArticleCreate,
@@ -39,7 +39,6 @@ def purchase_event(
     purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
     event = create_event(current_user, purchase_data.event, db)
     event.purchase = purchase
-    setattr(event, "is_favorite", event in current_user.event_bookmarks)
     db.commit()
     db.refresh(event)
     return event
@@ -72,7 +71,7 @@ def get_event(
     return event
 
 
-@router.put("/{event_id}", response_model=schemas.EventListView)
+@router.put("/{event_id}", response_model=schemas.EventCreateResponse)
 def update_event(
     event_id: int,
     event_update: schemas.EventCreate,
@@ -82,7 +81,7 @@ def update_event(
     return event_crud.update_event(db, event_id, event_update)
 
 
-@router.put("/{event_id}/activate", response_model=schemas.Event)
+@router.put("/{event_id}/activate", response_model=schemas.EventListView)
 def activate_event(
     event_id: int,
     db: Session = Depends(get_db),
@@ -90,7 +89,6 @@ def activate_event(
 ):
     event = event_crud.get_event(db, event_id)
     event.status = "1"
-    setattr(event, "is_favorite", event in current_user.event_bookmarks)
     db.commit()
     db.refresh(event)
     return event

@@ -18,7 +18,7 @@ from api.dependencies import (
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-@router.post("/", response_model=schemas.JobListView)
+@router.post("/", response_model=schemas.JobCreateResponse)
 def create_job(
     current_user: Annotated[dict, Depends(get_company_user)],
     job_create: schemas.JobCreate,
@@ -30,7 +30,7 @@ def create_job(
     return job
 
 
-@router.post("/purchase-job", response_model=schemas.Job)
+@router.post("/purchase-job", response_model=schemas.JobCreateResponse)
 def purchase_job(
     current_user: Annotated[dict, Depends(get_current_active_user)],
     purchase_data: schemas.JobArticleCreate,
@@ -39,7 +39,6 @@ def purchase_job(
     purchase = plan_crud.purchase_plan(db, purchase_data.purchase, current_user)
     job = create_job(current_user, purchase_data.job, db)
     job.purchase = purchase
-    setattr(job, "is_favorite", job in current_user.job_bookmarks)
     db.commit()
     db.refresh(job)
     return job
@@ -72,7 +71,7 @@ def get_job(
     return job
 
 
-@router.put("/{job_id}", response_model=schemas.JobListView)
+@router.put("/{job_id}", response_model=schemas.JobCreateResponse)
 def update_job(
     job_id: int,
     job_update: schemas.JobCreate,
@@ -82,7 +81,7 @@ def update_job(
     return job_crud.update_job(db, job_id, job_update)
 
 
-@router.put("/{job_id}/activate", response_model=schemas.Job)
+@router.put("/{job_id}/activate", response_model=schemas.JobListView)
 def activate_job(
     job_id: int,
     db: Session = Depends(get_db),
@@ -90,7 +89,6 @@ def activate_job(
 ):
     job = job_crud.get_job(db, job_id)
     job.status = "1"
-    setattr(job, "is_favorite", job in current_user.job_bookmarks)
     db.commit()
     db.refresh(job)
     return job
