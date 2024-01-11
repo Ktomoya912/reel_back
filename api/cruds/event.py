@@ -24,10 +24,14 @@ def create_event_times(
     event: models.Event,
     event_times: list[schemas.EventTimeCreate],
 ) -> models.EventTime:
+    results = []
     for event_time in event_times:
         tmp = event_time.model_dump()
-        event_time = models.EventTime(**tmp)
-        event.event_times.append(event_time)
+        event_time = db.query(models.EventTime).filter_by(**tmp).first()
+        if event_time is None:
+            event_time = models.EventTime(**tmp)
+        results.append(event_time)
+    event.event_times = results
     db.commit()
     db.refresh(event)
     return event
@@ -39,7 +43,8 @@ def update_event(
     tags = event_update.tags
     event = get_event(db, id)
     tag_crud.create_event_tags(db, event, tags)
-    tmp = event_update.model_dump(exclude={"tags"})
+    event = create_event_times(db, event, event_update.event_times)
+    tmp = event_update.model_dump(exclude={"tags", "event_times"}, exclude_unset=True)
     for key, value in tmp.items():
         setattr(event, key, value)
     db.commit()
@@ -76,7 +81,6 @@ def delete_event(db: Session, id: int) -> bool:
     event = db.query(models.Event).filter(models.Event.id == id).first()
     db.delete(event)
     db.commit()
-    db.refresh(event)
     return True
 
 

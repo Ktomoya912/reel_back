@@ -22,10 +22,14 @@ def create_job_times(
     job: models.Job,
     job_times: list[schemas.JobTimeCreate],
 ) -> models.JobTime:
+    results = []
     for job_time in job_times:
         tmp = job_time.model_dump()
-        job_time = models.JobTime(**tmp)
-        job.job_times.append(job_time)
+        job_time = db.query(models.JobTime).filter_by(**tmp).first()
+        if job_time is None:
+            job_time = models.JobTime(**tmp)
+        results.append(job_time)
+    job.job_times = results
     db.commit()
     db.refresh(job)
     return job
@@ -35,7 +39,8 @@ def update_job(db: Session, id: int, job_update: schemas.JobCreate) -> models.Jo
     tags = job_update.tags
     job = get_job(db, id)
     tag_crud.create_job_tags(db, job, tags)
-    tmp = job_update.model_dump(exclude={"tags"})
+    job = create_job_times(db, job, job_update.job_times)
+    tmp = job_update.model_dump(exclude={"tags", "job_times"}, exclude_unset=True)
     for key, value in tmp.items():
         setattr(job, key, value)
     db.commit()
@@ -72,7 +77,6 @@ def delete_job(db: Session, id: int) -> bool:
     job = db.query(models.Job).filter(models.Job.id == id).first()
     db.delete(job)
     db.commit()
-    db.refresh(job)
     return True
 
 
