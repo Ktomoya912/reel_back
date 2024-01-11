@@ -194,10 +194,8 @@ def create_review(
     return job_review
 
 
-def update_review(
-    db: Session, job_id: int, user_id: int, review: schemas.JobReviewCreate
-):
-    job_review = (
+def get_review(db: Session, job_id: int, user_id: int):
+    return (
         db.query(models.JobReview)
         .filter(
             models.JobReview.user_id == user_id,
@@ -205,6 +203,12 @@ def update_review(
         )
         .first()
     )
+
+
+def update_review(
+    db: Session, job_id: int, user_id: int, review: schemas.JobReviewCreate
+):
+    job_review = get_review(db, job_id, user_id)
     tmp = review.model_dump(exclude_unset=True)
     for key, value in tmp.items():
         setattr(job_review, key, value)
@@ -214,14 +218,7 @@ def update_review(
 
 
 def delete_review(db: Session, job_id: int, user_id: int):
-    job_review = (
-        db.query(models.JobReview)
-        .filter(
-            models.JobReview.user_id == user_id,
-            models.JobReview.job_id == job_id,
-        )
-        .first()
-    )
+    job_review = get_review(db, job_id, user_id)
     db.delete(job_review)
     db.commit()
     return True

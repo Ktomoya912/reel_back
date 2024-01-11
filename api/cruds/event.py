@@ -200,10 +200,8 @@ def create_review(
     return event_review
 
 
-def update_review(
-    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
-):
-    event_review = (
+def get_review(db: Session, event_id: int, user_id: int):
+    return (
         db.query(models.EventReview)
         .filter(
             models.EventReview.user_id == user_id,
@@ -211,6 +209,12 @@ def update_review(
         )
         .first()
     )
+
+
+def update_review(
+    db: Session, event_id: int, user_id: int, review: schemas.EventReviewCreate
+):
+    event_review = get_review(db, event_id, user_id)
     tmp = review.model_dump(exclude_unset=True)
     for key, value in tmp.items():
         setattr(event_review, key, value)
@@ -220,14 +224,7 @@ def update_review(
 
 
 def delete_review(db: Session, event_id: int, user_id: int):
-    event_review = (
-        db.query(models.EventReview)
-        .filter(
-            models.EventReview.user_id == user_id,
-            models.EventReview.event_id == event_id,
-        )
-        .first()
-    )
+    event_review = get_review(db, event_id, user_id)
     db.delete(event_review)
     db.commit()
     return True

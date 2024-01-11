@@ -38,7 +38,9 @@ def update_plan(
 
 
 def delete_plan(db: Session, plan_id: int) -> Literal[True]:
-    plan = db.query(models.Plan).get(plan_id)
+    plan = get_plan(db, plan_id)
+    if plan is None:
+        return False
     db.delete(plan)
     db.commit()
     return True

@@ -58,7 +58,10 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     settings: config.BaseConfig = Depends(get_config),
 ) -> models.User:
-    """現在のユーザーの取得"""
+    """
+    トークンからユーザーを取得する。
+    トークン列が不正な場合は、HTTPException(status_code=401) を返す。
+    """
     credentials_exception = HTTPException(
         status_code=401, detail="Could not validate credentials"
     )
