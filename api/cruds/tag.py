@@ -15,8 +15,7 @@ def create_tag(db: Session, tag: schemas.TagCreate) -> models.Tag:
 
 
 def get_tag_by_name(db: Session, tag_name: str) -> models.Tag:
-    tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
-    return tag
+    return db.query(models.Tag).filter(models.Tag.name == tag_name).first()
 
 
 def get_tags(db: Session) -> list[models.Tag]:
