@@ -147,6 +147,11 @@ class JobListView(JobCreate):
 
 
 class Job(JobListView):
+    average_review_point: Optional[float] = Field(
+        None,
+        example=4.5,
+        description="レビュー平均ポイント",
+    )
     reviews: Optional[List[JobReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
     author: user_schema.User

@@ -78,3 +78,11 @@ class Event(BaseModel):
         if self.purchase is None:
             return False
         return get_jst_now() < self.purchase.expiration_date
+
+    @property
+    def average_review_point(self):
+        if len(self.reviews) == 0:
+            return 0
+        return round(
+            sum([review.review_point for review in self.reviews]) / len(self.reviews), 1
+        )

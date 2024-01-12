@@ -171,6 +171,11 @@ class EventListView(EventCreateResponse):
 
 
 class Event(EventListView):
+    average_review_point: Optional[float] = Field(
+        None,
+        example=4.5,
+        description="レビュー平均ポイント",
+    )
     # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
     reviews: Optional[List[EventReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
