@@ -15,7 +15,7 @@ from api.dependencies import (
     get_db,
 )
 
-router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter(prefix="/events", tags=["イベント"])
 
 
 @router.post("/", response_model=schemas.EventCreateResponse, summary="イベント作成")

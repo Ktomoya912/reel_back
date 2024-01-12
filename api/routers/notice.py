@@ -6,7 +6,7 @@ from api import models, schemas
 
 from ..dependencies import get_current_user, get_db
 
-router = APIRouter(prefix="/notices", tags=["notices"])
+router = APIRouter(prefix="/notices", tags=["通知"])
 
 
 @router.get("/", response_model=list[list[schemas.Message]], summary="通知取得")

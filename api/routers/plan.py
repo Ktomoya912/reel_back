@@ -7,7 +7,7 @@ import api.cruds.plan as plan_crud
 from api import models, schemas
 from api.dependencies import get_admin_user, get_company_user, get_db
 
-router = APIRouter(prefix="/plans", tags=["plans"])
+router = APIRouter(prefix="/plans", tags=["プラン"])
 
 
 @router.get("/", response_model=list[schemas.Plan], summary="プラン取得")

@@ -12,7 +12,7 @@ from api.utils import send_email
 
 from ..dependencies import get_config, get_current_user, get_db, get_general_user
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["ユーザー"])
 
 
 @router.post("/", response_model=schemas.UserCreateResponse, summary="ユーザー作成")

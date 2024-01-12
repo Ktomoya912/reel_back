@@ -5,7 +5,7 @@ import api.cruds.tag as tag_crud
 from api import schemas
 from api.dependencies import get_db
 
-router = APIRouter(prefix="/tags", tags=["tags"])
+router = APIRouter(prefix="/tags", tags=["タグ"])
 
 
 @router.get("/", response_model=list[schemas.Tag], summary="タグ取得")

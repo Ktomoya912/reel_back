@@ -15,7 +15,7 @@ from api.dependencies import (
     get_db,
 )
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter(prefix="/jobs", tags=["求人"])
 
 
 @router.post("/", response_model=schemas.JobCreateResponse, summary="求人作成")
