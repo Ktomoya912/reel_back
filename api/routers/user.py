@@ -70,6 +70,58 @@ def get_users(db: Session = Depends(get_db)):
     return user_crud.get_users(db)
 
 
+@router.get(
+    "/job-bookmarks", response_model=list[schemas.JobListView], summary="お気に入り求人取得"
+)
+def get_bookmark_jobs(
+    current_user: models.User = Depends(get_general_user),
+    db: Session = Depends(get_db),
+):
+    """
+    お気に入り登録しているイベントの一覧を取得する。
+    """
+    return current_user.job_bookmarks
+
+
+@router.get(
+    "/event-bookmarks",
+    response_model=list[schemas.EventListView],
+    summary="お気に入りイベント一覧取得",
+)
+def get_bookmark_events(
+    current_user: models.User = Depends(get_general_user),
+    db: Session = Depends(get_db),
+):
+    """
+    お気に入り登録しているイベントの一覧を取得する。
+    """
+    return current_user.event_bookmarks
+
+
+@router.get(
+    "/event-watched", response_model=list[schemas.EventListView], summary="イベントの閲覧履歴"
+)
+def get_event_watched(
+    current_user: models.User = Depends(get_general_user),
+    db: Session = Depends(get_db),
+):
+    """
+    イベントの閲覧履歴を取得する。
+    """
+    return current_user.event_watched
+
+
+@router.get("/job-watched", response_model=list[schemas.JobListView], summary="求人の閲覧履歴")
+def get_job_watched(
+    current_user: models.User = Depends(get_general_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人の閲覧履歴を取得する。
+    """
+    return current_user.job_watched
+
+
 @router.get("/me", response_model=schemas.User, summary="自分自身のユーザー情報")
 def get_user_me(
     current_user: schemas.User = Depends(get_current_user),
