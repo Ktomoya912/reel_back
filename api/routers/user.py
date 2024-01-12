@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Query
 from jinja2 import Template
 from sqlalchemy.orm.session import Session
 
@@ -21,6 +21,7 @@ def create_user(
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: schemas.UserCreate,
+    send_verification_email: bool = Query(True, description="認証メールを送信するか"),
     db: Session = Depends(get_db),
 ):
     """必要データを受け取り、ユーザーを作成する。
@@ -31,7 +32,7 @@ def create_user(
     if user_crud.get_user_by_username(db, user_body.username):
         raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user(db, user_body)
-    if settings.IS_PRODUCT:
+    if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
@@ -44,6 +45,7 @@ def create_user_company(
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: schemas.UserCreateCompany,
+    send_verification_email: bool = Query(True, description="認証メールを送信するか"),
     db: Session = Depends(get_db),
 ):
     """必要データを受け取り、企業ユーザーを作成する。
@@ -54,7 +56,7 @@ def create_user_company(
     if user_crud.get_user_by_username(db, user_body.username):
         raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user_company(db, user_body)
-    if settings.IS_PRODUCT:
+    if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
@@ -80,6 +82,22 @@ def get_user_me(
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """ユーザーIDを指定して、ユーザー情報を取得する。"""
     return user_crud.get_user(db, user_id)
+
+
+@router.put("/{user_id}/activate", response_model=schemas.User, summary="ユーザー有効化")
+def activate_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    """ユーザーIDを指定して、ユーザーを有効化する。
+    デバッグ用。のちに削除されるので、本番環境では使用しないこと。"""
+    user = user_crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = True
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.put("/{user_id}", response_model=schemas.UserCreateResponse, summary="ユーザー情報更新")
