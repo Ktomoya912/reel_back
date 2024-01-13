@@ -41,15 +41,6 @@ class CompanyCreateResponse(CompanyCreate):
         orm_mode = True
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: Union[str, None] = None
-
-
 class MailBase(BaseModel):
     email: EmailStr = Field(
         ...,
@@ -145,3 +136,13 @@ class UserCreateCompany(UserCreate):
 
 class UserCreateResponse(UserCreate):
     id: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: "User"
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
