@@ -8,7 +8,7 @@ class Application(BaseModel):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     job_id = Column(Integer, ForeignKey("jobs.id"))
-    status = Column(String(2))
+    status = Column(String(2), default="p")
 
     user = relationship("User", back_populates="applications")
     job = relationship("Job", back_populates="applications")

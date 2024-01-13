@@ -10,7 +10,12 @@ import api.routers.auth as auth_router
 from api import config, models, schemas
 from api.utils import send_email
 
-from ..dependencies import get_config, get_current_user, get_db, get_general_user
+from ..dependencies import (
+    get_config,
+    get_current_user,
+    get_db,
+    get_current_active_user,
+)
 
 router = APIRouter(prefix="/users", tags=["ユーザー"])
 
@@ -71,25 +76,12 @@ def get_users(db: Session = Depends(get_db)):
 
 
 @router.get(
-    "/job-bookmarks", response_model=list[schemas.JobListView], summary="お気に入り求人取得"
-)
-def get_bookmark_jobs(
-    current_user: models.User = Depends(get_general_user),
-    db: Session = Depends(get_db),
-):
-    """
-    お気に入り登録しているイベントの一覧を取得する。
-    """
-    return current_user.job_bookmarks
-
-
-@router.get(
     "/event-bookmarks",
     response_model=list[schemas.EventListView],
     summary="お気に入りイベント一覧取得",
 )
 def get_bookmark_events(
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -102,7 +94,7 @@ def get_bookmark_events(
     "/event-watched", response_model=list[schemas.EventListView], summary="イベントの閲覧履歴"
 )
 def get_event_watched(
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -111,15 +103,67 @@ def get_event_watched(
     return current_user.event_watched
 
 
+@router.get(
+    "/event-postings", response_model=list[schemas.EventListView], summary="イベントの投稿履歴"
+)
+def get_job_postings(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    イベントの投稿履歴を取得する。
+    """
+    return current_user.event_postings
+
+
+@router.get(
+    "/job-bookmarks", response_model=list[schemas.JobListView], summary="お気に入り求人取得"
+)
+def get_bookmark_jobs(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    お気に入り登録している求人の一覧を取得する。
+    """
+    return current_user.job_bookmarks
+
+
 @router.get("/job-watched", response_model=list[schemas.JobListView], summary="求人の閲覧履歴")
 def get_job_watched(
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
     求人の閲覧履歴を取得する。
     """
     return current_user.job_watched
+
+
+@router.get(
+    "/job-postings", response_model=list[schemas.JobListView], summary="求人の投稿履歴"
+)
+def get_job_postings(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人の投稿履歴を取得する。
+    """
+    return current_user.job_postings
+
+
+@router.get(
+    "/job-applications", response_model=list[schemas.JobApplication], summary="応募一覧取得"
+)
+def get_job_applications(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    応募一覧を取得する。
+    """
+    return current_user.applications
 
 
 @router.get("/me", response_model=schemas.User, summary="自分自身のユーザー情報")
@@ -157,7 +201,7 @@ def update_user(
     user_id: int,
     user_body: schemas.UserCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """ユーザーIDを指定して、ユーザー情報を更新する。
     自分自身のユーザー情報を更新する場合は、認証が必要。
@@ -176,7 +220,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """ユーザーIDを指定して、ユーザーを削除する。
     自分自身のユーザーを削除する場合は、認証が必要。
