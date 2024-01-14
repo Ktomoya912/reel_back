@@ -141,7 +141,7 @@ def activate_event(
     公開できるのは、管理者のみである。
     """
     event = event_crud.get_event(db, event_id)
-    event.status = "1"
+    event.status = "active"
     db.commit()
     db.refresh(event)
     return event
