@@ -52,7 +52,7 @@ class Job(BaseModel):
     is_one_day = Column(Boolean, default=False)
     additional_message = Column(Text)
     image_url = Column(String(255))
-    status = Column(String(2))
+    status = Column(String(10), default="draft")
     user_id = Column(Integer, ForeignKey("users.id"))
     purchase_id = Column(Integer, ForeignKey("purchases.id"))
 

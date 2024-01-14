@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -38,7 +38,7 @@ def create_event(
 def get_events(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
-    only_active: bool = False,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     イベントの一覧を取得する。
@@ -60,7 +60,7 @@ def get_events(
             tag,
         )
     else:
-        data = event_crud.get_events(only_active=only_active, **common)
+        data = event_crud.get_events(type=type, **common)
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
 
 
@@ -142,6 +142,25 @@ def activate_event(
     """
     event = event_crud.get_event(db, event_id)
     event.status = "1"
+    db.commit()
+    db.refresh(event)
+    return event
+
+
+@router.put(
+    "/{event_id}/deactivate", response_model=schemas.EventListView, summary="イベント非公開"
+)
+def deactivate_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_admin_user),
+):
+    """
+    イベントを非公開にする。
+    公開できるのは、管理者のみである。
+    """
+    event = event_crud.get_event(db, event_id)
+    event.status = "inactive"
     db.commit()
     db.refresh(event)
     return event

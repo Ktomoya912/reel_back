@@ -1,4 +1,5 @@
 import datetime
+from typing import Literal
 
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
@@ -169,7 +170,7 @@ def get_recent_jobs(db: Session) -> list[models.Job]:
 
 def get_jobs(
     db: Session,
-    only_active: bool = True,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
@@ -177,8 +178,9 @@ def get_jobs(
     limit: int = 100,
 ):
     query = db.query(models.Job)
-    if only_active:
-        query = db.query(models.Job).filter(models.Job.status == "1")
+    if type != "all":
+        query = query.filter(models.Job.status == type)
+
     if keyword != "":
         query = query.filter(
             or_(

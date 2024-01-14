@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -40,7 +40,7 @@ def create_job(
 def get_jobs(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
-    only_active: bool = False,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     求人の一覧を取得する。
@@ -62,7 +62,7 @@ def get_jobs(
             tag,
         )
     else:
-        data = job_crud.get_jobs(only_active=only_active, **common)
+        data = job_crud.get_jobs(type=type, **common)
     return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
 
 
@@ -136,7 +136,24 @@ def activate_job(
     このエンドポイントは管理者のみがアクセスできる。
     """
     job = job_crud.get_job(db, job_id)
-    job.status = "1"
+    job.status = "active"
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+@router.put("/{job_id}/deactivate", response_model=schemas.JobListView, summary="求人非公開")
+def deactivate_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_admin_user),
+):
+    """
+    求人を非公開にする。
+    このエンドポイントは管理者のみがアクセスできる。
+    """
+    job = job_crud.get_job(db, job_id)
+    job.status = "inactive"
     db.commit()
     db.refresh(job)
     return job
