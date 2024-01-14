@@ -55,13 +55,12 @@ def get_events(
     何も指定しない状態ならば、すべてのイベントを取得する。
     """
     if tag:
-        data = event_crud.get_event_by_tag(
-            common["db"],
-            tag,
-        )
+        db_tag = tag_crud.get_tag_by_name(common["db"], tag)
+        if db_tag:
+            return db_tag.events[common["offset"] : common["offset"] + common["limit"]]
     else:
-        data = event_crud.get_events(type=type, **common)
-    return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
+        return event_crud.get_events(type=type, **common)
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 @router.get(
