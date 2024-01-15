@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from jinja2 import Template
 from sqlalchemy.orm.session import Session
 
@@ -10,12 +10,7 @@ import api.routers.auth as auth_router
 from api import config, models, schemas
 from api.utils import send_email
 
-from ..dependencies import (
-    get_config,
-    get_current_user,
-    get_db,
-    get_current_active_user,
-)
+from ..dependencies import get_config, get_current_active_user, get_current_user, get_db
 
 router = APIRouter(prefix="/users", tags=["ユーザー"])
 
@@ -106,14 +101,18 @@ def get_event_watched(
 @router.get(
     "/event-postings", response_model=list[schemas.EventListView], summary="イベントの投稿履歴"
 )
-def get_job_postings(
+def get_event_postings(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
+    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     イベントの投稿履歴を取得する。
     """
-    return current_user.event_postings
+    if type == "all":
+        return current_user.event_postings
+    else:
+        return [event for event in current_user.event_postings if event.status == type]
 
 
 @router.get(
@@ -146,11 +145,15 @@ def get_job_watched(
 def get_job_postings(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
+    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     求人の投稿履歴を取得する。
     """
-    return current_user.job_postings
+    if type == "all":
+        return current_user.job_postings
+    else:
+        return [job for job in current_user.job_postings if job.status == type]
 
 
 @router.get(
