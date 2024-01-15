@@ -39,6 +39,9 @@ class JobWatched(BaseModel):
     job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
     count = Column(Integer, default=1)
 
+    user = relationship("User", back_populates="job_watched_link")
+    job = relationship("Job", back_populates="watched_user_link")
+
 
 class Job(BaseModel):
     id = Column(Integer, primary_key=True)
@@ -63,10 +66,9 @@ class Job(BaseModel):
         "User", secondary="job_bookmarks", back_populates="job_bookmarks"
     )
     applications = relationship("Application", back_populates="job")
-    watched_users = relationship(
-        "User",
-        back_populates="job_watched",
-        secondary="job_watched",
+    watched_user_link = relationship(
+        "JobWatched",
+        back_populates="job",
     )
     purchase = relationship("Purchase", backref="job")
 

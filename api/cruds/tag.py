@@ -1,5 +1,5 @@
 from sqlalchemy.orm.session import Session
-
+from fastapi import HTTPException
 from api import models, schemas
 
 

@@ -37,7 +37,11 @@ class EventWatched(BaseModel):
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
+
     count = Column(Integer, default=1)
+
+    user = relationship("User", back_populates="event_watched_link")
+    event = relationship("Event", back_populates="watched_user_link")
 
 
 class Event(BaseModel):
@@ -66,10 +70,9 @@ class Event(BaseModel):
     bookmark_users = relationship(
         "User", secondary="event_bookmarks", back_populates="event_bookmarks"
     )
-    watched_users = relationship(
-        "User",
-        back_populates="event_watched",
-        secondary="event_watched",
+    watched_user_link = relationship(
+        "EventWatched",
+        back_populates="event",
     )
     purchase = relationship("Purchase", backref="event")
 
