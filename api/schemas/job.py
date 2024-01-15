@@ -160,8 +160,9 @@ class Job(JobListView):
 class JobApplication(BaseModel):
     id: int
     user_id: int
-    job_id: int
+    # job_id: int
     status: str
+    job: JobListView
 
     class Config:
         orm_mode = True
