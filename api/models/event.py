@@ -53,7 +53,7 @@ class Event(BaseModel):
     description = Column(Text)
     participation_fee = Column(String(255))
     capacity = Column(Integer)
-    status = Column(String(2))
+    status = Column(String(10), default="draft")
     additional_message = Column(Text)
     image_url = Column(String(255))
     caution = Column(Text)

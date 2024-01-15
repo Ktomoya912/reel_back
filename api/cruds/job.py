@@ -1,8 +1,9 @@
 import datetime
+from typing import Literal
 
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
-
+from fastapi import HTTPException
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.utils import get_jst_now
@@ -80,6 +81,71 @@ def delete_job(db: Session, id: int) -> bool:
     return True
 
 
+def apply_job(db: Session, job_id: int, user: models.User) -> models.Application:
+    apply_model = (
+        db.query(models.Application)
+        .filter(
+            models.Application.user_id == user.id,
+            models.Application.job_id == job_id,
+        )
+        .first()
+    )
+    if apply_model:
+        raise HTTPException(status_code=400, detail="Already applied")
+    apply_model = models.Application(user_id=user.id, job_id=job_id)
+    db.add(apply_model)
+    db.commit()
+    db.refresh(apply_model)
+    return apply_model
+
+
+def approve_application(db: Session, job_id: int, user_id: int) -> models.Application:
+    application = (
+        db.query(models.Application)
+        .filter(
+            models.Application.user_id == user_id,
+            models.Application.job_id == job_id,
+        )
+        .first()
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if application.status == "a":
+        raise HTTPException(status_code=400, detail="Already approved")
+    application.status = "a"
+    db.commit()
+    db.refresh(application)
+    return application
+
+
+def reject_application(db: Session, job_id: int, user_id: int) -> models.Application:
+    application = (
+        db.query(models.Application)
+        .filter(
+            models.Application.user_id == user_id,
+            models.Application.job_id == job_id,
+        )
+        .first()
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if application.status == "r":
+        raise HTTPException(status_code=400, detail="Already rejected")
+    application.status = "r"
+    db.commit()
+    db.refresh(application)
+    return application
+
+
+def get_applications(db: Session, job_id: int) -> list[models.User]:
+    return (
+        db.query(models.User)
+        .join(models.Application)
+        .filter(models.Application.job_id == job_id)
+        .all()
+    )
+
+
 def get_job_by_tag(db: Session, tag_name: str) -> list[models.Job]:
     tag = tag_crud.get_tag_by_name(db, tag_name)
     return tag.jobs
@@ -104,7 +170,7 @@ def get_recent_jobs(db: Session) -> list[models.Job]:
 
 def get_jobs(
     db: Session,
-    only_active: bool = True,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
@@ -112,8 +178,9 @@ def get_jobs(
     limit: int = 100,
 ):
     query = db.query(models.Job)
-    if only_active:
-        query = db.query(models.Job).filter(models.Job.status == "1")
+    if type != "all":
+        query = query.filter(models.Job.status == type)
+
     if keyword != "":
         query = query.filter(
             or_(

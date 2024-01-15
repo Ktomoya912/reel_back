@@ -155,3 +155,18 @@ class Job(JobListView):
     reviews: Optional[List[JobReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
     author: user_schema.User
+
+
+class JobApplication(BaseModel):
+    id: int
+    user_id: int
+    job_id: int
+    status: str
+
+    class Config:
+        orm_mode = True
+
+
+class JobApplicationUsers(BaseModel):
+    job_id: int
+    users: List[user_schema.User]

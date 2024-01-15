@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Query
 from jinja2 import Template
 from sqlalchemy.orm.session import Session
 
@@ -10,7 +10,12 @@ import api.routers.auth as auth_router
 from api import config, models, schemas
 from api.utils import send_email
 
-from ..dependencies import get_config, get_current_user, get_db, get_general_user
+from ..dependencies import (
+    get_config,
+    get_current_user,
+    get_db,
+    get_current_active_user,
+)
 
 router = APIRouter(prefix="/users", tags=["ユーザー"])
 
@@ -21,6 +26,7 @@ def create_user(
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: schemas.UserCreate,
+    send_verification_email: bool = Query(True, description="認証メールを送信するか"),
     db: Session = Depends(get_db),
 ):
     """必要データを受け取り、ユーザーを作成する。
@@ -31,7 +37,7 @@ def create_user(
     if user_crud.get_user_by_username(db, user_body.username):
         raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user(db, user_body)
-    if settings.IS_PRODUCT:
+    if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
@@ -44,6 +50,7 @@ def create_user_company(
     background_tasks: BackgroundTasks,
     settings: Annotated[config.BaseConfig, Depends(get_config)],
     user_body: schemas.UserCreateCompany,
+    send_verification_email: bool = Query(True, description="認証メールを送信するか"),
     db: Session = Depends(get_db),
 ):
     """必要データを受け取り、企業ユーザーを作成する。
@@ -54,7 +61,7 @@ def create_user_company(
     if user_crud.get_user_by_username(db, user_body.username):
         raise HTTPException(status_code=400, detail="Username already registered")
     user = user_crud.create_user_company(db, user_body)
-    if settings.IS_PRODUCT:
+    if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
             request, background_tasks, settings=settings, email=user.email, db=db
         )
@@ -66,6 +73,97 @@ def get_users(db: Session = Depends(get_db)):
     """
     ユーザー一覧を取得する。"""
     return user_crud.get_users(db)
+
+
+@router.get(
+    "/event-bookmarks",
+    response_model=list[schemas.EventListView],
+    summary="お気に入りイベント一覧取得",
+)
+def get_bookmark_events(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    お気に入り登録しているイベントの一覧を取得する。
+    """
+    return current_user.event_bookmarks
+
+
+@router.get(
+    "/event-watched", response_model=list[schemas.EventListView], summary="イベントの閲覧履歴"
+)
+def get_event_watched(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    イベントの閲覧履歴を取得する。
+    """
+    return current_user.event_watched
+
+
+@router.get(
+    "/event-postings", response_model=list[schemas.EventListView], summary="イベントの投稿履歴"
+)
+def get_job_postings(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    イベントの投稿履歴を取得する。
+    """
+    return current_user.event_postings
+
+
+@router.get(
+    "/job-bookmarks", response_model=list[schemas.JobListView], summary="お気に入り求人取得"
+)
+def get_bookmark_jobs(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    お気に入り登録している求人の一覧を取得する。
+    """
+    return current_user.job_bookmarks
+
+
+@router.get("/job-watched", response_model=list[schemas.JobListView], summary="求人の閲覧履歴")
+def get_job_watched(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人の閲覧履歴を取得する。
+    """
+    return current_user.job_watched
+
+
+@router.get(
+    "/job-postings", response_model=list[schemas.JobListView], summary="求人の投稿履歴"
+)
+def get_job_postings(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人の投稿履歴を取得する。
+    """
+    return current_user.job_postings
+
+
+@router.get(
+    "/job-applications", response_model=list[schemas.JobApplication], summary="応募一覧取得"
+)
+def get_job_applications(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    応募一覧を取得する。
+    """
+    return current_user.applications
 
 
 @router.get("/me", response_model=schemas.User, summary="自分自身のユーザー情報")
@@ -82,12 +180,28 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return user_crud.get_user(db, user_id)
 
 
+@router.put("/{user_id}/activate", response_model=schemas.User, summary="ユーザー有効化")
+def activate_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    """ユーザーIDを指定して、ユーザーを有効化する。
+    デバッグ用。のちに削除されるので、本番環境では使用しないこと。"""
+    user = user_crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = True
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.put("/{user_id}", response_model=schemas.UserCreateResponse, summary="ユーザー情報更新")
 def update_user(
     user_id: int,
     user_body: schemas.UserCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """ユーザーIDを指定して、ユーザー情報を更新する。
     自分自身のユーザー情報を更新する場合は、認証が必要。
@@ -106,7 +220,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_general_user),
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """ユーザーIDを指定して、ユーザーを削除する。
     自分自身のユーザーを削除する場合は、認証が必要。

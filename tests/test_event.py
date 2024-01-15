@@ -41,7 +41,7 @@ class TestEvent:
         assert response.status_code == 400, response.text
         response = admin_client.put(f"{api_path}/events/1/activate")
         assert response.status_code == 200, response.text
-        assert response.json()["status"] == "1"
+        assert response.json()["status"] == "active"
 
     def test_get_events(self, general_client: TestClient, api_path: str):
         response = general_client.get(f"{api_path}/events/")

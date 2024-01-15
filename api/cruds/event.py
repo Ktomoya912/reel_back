@@ -1,4 +1,5 @@
 import datetime
+from typing import Literal
 
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
@@ -108,7 +109,7 @@ def get_recent_events(db: Session) -> list[models.Event]:
 
 def get_events(
     db: Session,
-    only_active: bool = True,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
@@ -116,8 +117,8 @@ def get_events(
     limit: int = 100,
 ):
     query = db.query(models.Event)
-    if only_active:
-        query = db.query(models.Event).filter(models.Event.status == "1")
+    if type != "all":
+        query = query.filter(models.Event.status == type)
     if keyword != "":
         query = query.filter(
             or_(

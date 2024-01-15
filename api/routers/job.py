@@ -1,16 +1,18 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
 
 import api.cruds.job as job_crud
 import api.cruds.plan as plan_crud
+import api.cruds.message as message_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.dependencies import (
     common_parameters,
     get_admin_user,
     get_company_user,
+    get_general_user,
     get_current_active_user,
     get_db,
 )
@@ -38,7 +40,7 @@ def create_job(
 def get_jobs(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
-    only_active: bool = False,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     求人の一覧を取得する。
@@ -55,13 +57,12 @@ def get_jobs(
     何も指定しない状態ならば、すべての求人を取得する。
     """
     if tag:
-        data = job_crud.get_job_by_tag(
-            common["db"],
-            tag,
-        )
+        db_tag = tag_crud.get_tag_by_name(common["db"], tag)
+        if db_tag:
+            return db_tag.jobs[common["offset"] : common["offset"] + common["limit"]]
     else:
-        data = job_crud.get_jobs(only_active=only_active, **common)
-    return data[common["offset"] : common["offset"] + common["limit"]]  # noqa E203
+        return job_crud.get_jobs(type=type, **common)
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 @router.get("/recent/", response_model=list[schemas.JobListView], summary="最近の求人取得")
@@ -134,7 +135,24 @@ def activate_job(
     このエンドポイントは管理者のみがアクセスできる。
     """
     job = job_crud.get_job(db, job_id)
-    job.status = "1"
+    job.status = "active"
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+@router.put("/{job_id}/deactivate", response_model=schemas.JobListView, summary="求人非公開")
+def deactivate_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_admin_user),
+):
+    """
+    求人を非公開にする。
+    このエンドポイントは管理者のみがアクセスできる。
+    """
+    job = job_crud.get_job(db, job_id)
+    job.status = "inactive"
     db.commit()
     db.refresh(job)
     return job
@@ -157,6 +175,104 @@ def purchase_job(
     db.commit()
     db.refresh(job)
     return job
+
+
+@router.post("/{job_id}/apply", response_model=schemas.JobApplication, summary="応募")
+def apply_job(
+    job_id: int,
+    current_user: models.User = Depends(get_general_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人に応募する。
+    """
+    response_data = job_crud.apply_job(db, job_id, current_user)
+    message = message_crud.create_message(
+        db,
+        schemas.MessageCreate(
+            title="応募がありました",
+            message=f"{current_user.username}さんが応募しました。",
+            type="J",
+            user_list=[response_data.job.author.id],
+        ),
+    )
+    message_crud.send_message(db, [response_data.job.author.id], message.id)
+    return response_data
+
+
+@router.get(
+    "/{job_id}/application",
+    response_model=schemas.JobApplicationUsers,
+    summary="応募一覧取得",
+)
+def get_applications(
+    job_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人に応募したユーザーの一覧を取得する。
+    """
+    return {
+        "job_id": job_id,
+        "users": job_crud.get_applications(db, job_id),
+    }
+
+
+@router.put(
+    "/{job_id}/application/approve",
+    response_model=schemas.JobApplication,
+    summary="応募承認",
+)
+def approve_application(
+    job_id: int,
+    user_id: int,
+    current_user: models.User = Depends(get_company_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人に応募したユーザーの応募を承認する。
+    """
+    response_data = job_crud.approve_application(db, job_id, user_id)
+    message = message_crud.create_message(
+        db,
+        schemas.MessageCreate(
+            title="応募が承認されました",
+            message=f"{response_data.job.author.username}さんが応募を承認しました。",
+            type="J",
+            user_list=[user_id],
+        ),
+    )
+    message_crud.send_message(db, [user_id], message.id)
+    return response_data
+
+
+@router.put(
+    "/{job_id}/application/reject",
+    response_model=schemas.JobApplication,
+    summary="応募拒否",
+)
+def reject_application(
+    job_id: int,
+    user_id: int,
+    current_user: models.User = Depends(get_company_user),
+    db: Session = Depends(get_db),
+):
+    """
+    求人に応募したユーザーの応募を拒否する。
+    """
+    response_data = job_crud.reject_application(db, job_id, user_id)
+    message = message_crud.create_message(
+        db,
+        schemas.MessageCreate(
+            title="応募が拒否されました",
+            message=f"{response_data.job.author.username}さんが応募を拒否しました。",
+            type="J",
+            user_list=[user_id],
+        ),
+    )
+    message_crud.send_message(db, [user_id], message.id)
+    return response_data
 
 
 @router.post("/{job_id}/bookmark", summary="求人お気に入り登録")
