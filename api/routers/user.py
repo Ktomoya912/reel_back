@@ -128,7 +128,7 @@ def send_mail_to_admin(
     mail_body: schemas.MailBody,
 ):
     """お問い合わせを管理者にメール送信"""
-    html_file = Path(__file__).parent.parent / "templates" / "mail-to-admin.html"
+    html_file = Path(__file__).parent.parent / "templates" / "MAIL-to-admin.html"
     html = Template(html_file.read_text())
     if settings.MAIL_PASSWORD is None:
         raise HTTPException(

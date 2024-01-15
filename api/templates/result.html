@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center">{{message}}</h1>
+{% if user %}
+<div style="width: 50%; margin: 0 auto;">
+    <p>あなたのユーザー名: {{user.username}}</p>
+    <p>あなたのメールアドレス: {{ user.email[:3] }}***{{ user.email[-3:] }}</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class BaseConfig(BaseSettings, extra="allow"):
     SECRET_KEY: str
+    PREFIX: str = "/api/v1"
     IS_PRODUCT: bool = False
     MAIL_PASSWORD: Optional[str] = None
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

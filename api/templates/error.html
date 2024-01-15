@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+エラーが発生しました。
+{% endblock %}
+
+{% block content %}
+<h1>
+    エラーが発生しました。エラーの詳細は以下の通りです。
+</h1>
+<h2>
+    {{ error_code }}: {{ error_message | safe }}
+</h2>
+{% endblock %}
