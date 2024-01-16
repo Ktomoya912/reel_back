@@ -157,11 +157,16 @@ class Job(JobListView):
     author: user_schema.User
 
 
-class JobApplication(BaseModel):
-    id: int
+class JobApplicationBase(BaseModel):
     user_id: int
-    job_id: int
+    user: user_schema.User
     status: str
+
+
+class JobApplication(JobApplicationBase):
+    # job_id: int
+    status: str
+    job: JobListView
 
     class Config:
         orm_mode = True
@@ -169,4 +174,4 @@ class JobApplication(BaseModel):
 
 class JobApplicationUsers(BaseModel):
     job_id: int
-    users: List[user_schema.User]
+    users: List[JobApplicationBase]

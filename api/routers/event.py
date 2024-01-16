@@ -266,3 +266,19 @@ def delete_review(
     if not review:
         raise HTTPException(status_code=404, detail="Not found")
     return event_crud.delete_review(db, event_id, user_id)
+
+
+@router.get(
+    "/{event_id}/impressions",
+    summary="イベント広告のインプレッション取得",
+    tags=["広告インプレッション"],
+)
+def get_event_impressions(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_company_user),
+):
+    """
+    イベント広告のインプレッションを取得する。
+    """
+    return event_crud.get_event_impressions(db, event_id)

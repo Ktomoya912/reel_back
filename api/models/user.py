@@ -32,10 +32,9 @@ class User(BaseModel):
         "Job", secondary="job_bookmarks", back_populates="bookmark_users"
     )
     job_postings = relationship("Job", backref="author")
-    job_watched = relationship(
-        "Job",
-        back_populates="watched_users",
-        secondary="job_watched",
+    job_watched_link = relationship(
+        "JobWatched",
+        back_populates="user",
     )
 
     event_reviews = relationship("EventReview", backref="user")
@@ -43,10 +42,9 @@ class User(BaseModel):
         "Event", secondary="event_bookmarks", back_populates="bookmark_users"
     )
     event_postings = relationship("Event", backref="author")
-    event_watched = relationship(
-        "Event",
-        back_populates="watched_users",
-        secondary="event_watched",
+    event_watched_link = relationship(
+        "EventWatched",
+        back_populates="user",
     )
 
     applications = relationship("Application", back_populates="user")

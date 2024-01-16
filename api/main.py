@@ -15,9 +15,10 @@ def initialize():
     env_file.touch(exist_ok=True)
     load_dotenv(dotenv_path=env_file)
     if os.getenv("SECRET_KEY") is None:
+        secret_key = secrets.token_hex(32)
         with open(env_file, "a", encoding="utf-8") as f:
-            f.write(f"SECRET_KEY={secrets.token_hex(32)}\n")
-        load_dotenv(dotenv_path=env_file)
+            f.write(f"SECRET_KEY={secret_key}\n")
+        os.environ["SECRET_KEY"] = secret_key
 
 
 def create_app():

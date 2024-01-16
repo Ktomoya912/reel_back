@@ -1,12 +1,12 @@
 from pathlib import Path
-
+import os
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from ..dependencies import get_company_user, get_config
+from ..dependencies import get_company_user
 from ..utils import get_jst_now
 from . import auth, event, job, notice, plan, tag, user
 
-router = APIRouter(prefix=get_config().PREFIX)
+router = APIRouter(prefix=os.getenv("PREFIX", "/api/v1"))
 
 router.include_router(auth.router)
 router.include_router(event.router)

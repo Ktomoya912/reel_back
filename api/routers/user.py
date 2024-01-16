@@ -104,13 +104,17 @@ def get_event_watched(
 def get_event_postings(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-    type: Literal["all", "active", "inactive", "draft"] = "all",
+    type: Literal["all", "active", "inactive", "draft", "posted"] = "all",
 ):
     """
     イベントの投稿履歴を取得する。
     """
     if type == "all":
         return current_user.event_postings
+    elif type == "posted":
+        return [
+            event for event in current_user.event_postings if event.status != "draft"
+        ]
     else:
         return [event for event in current_user.event_postings if event.status == type]
 
@@ -145,13 +149,15 @@ def get_job_watched(
 def get_job_postings(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-    type: Literal["all", "active", "inactive", "draft"] = "all",
+    type: Literal["all", "active", "inactive", "draft", "posted"] = "all",
 ):
     """
     求人の投稿履歴を取得する。
     """
     if type == "all":
         return current_user.job_postings
+    elif type == "posted":
+        return [job for job in current_user.job_postings if job.status != "draft"]
     else:
         return [job for job in current_user.job_postings if job.status == type]
 
@@ -180,7 +186,10 @@ def get_user_me(
 @router.get("/{user_id}", response_model=schemas.User, summary="ユーザー情報")
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """ユーザーIDを指定して、ユーザー情報を取得する。"""
-    return user_crud.get_user(db, user_id)
+    user = user_crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Not Found")
+    return user
 
 
 @router.put("/{user_id}/activate", response_model=schemas.User, summary="ユーザー有効化")

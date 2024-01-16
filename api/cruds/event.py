@@ -3,6 +3,7 @@ from typing import Literal
 
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
+from fastapi import HTTPException
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
@@ -55,6 +56,8 @@ def update_event(
 
 def get_event(db: Session, id: int) -> models.Event:
     event = db.query(models.Event).filter(models.Event.id == id).first()
+    if event is None:
+        raise HTTPException(status_code=404, detail="Not Found")
     return event
 
 
@@ -87,6 +90,8 @@ def delete_event(db: Session, id: int) -> bool:
 
 def get_event_by_tag(db: Session, tag_name: str) -> list[models.Event]:
     tag = tag_crud.get_tag_by_name(db, tag_name)
+    if tag is None:
+        raise HTTPException(status_code=404, detail="Not Found")
     return tag.events
 
 
@@ -262,3 +267,67 @@ def unbookmark_event(db: Session, event_id: int, user_id: int):
     db.delete(bookmark)
     db.commit()
     return True
+
+
+def get_event_impressions(
+    db: Session,
+    event_id: int,
+):
+    def get_age_range(
+        age: int,
+    ) -> Literal["under_20", "20-24", "25-29", "30-34", "35-39", "over_40"]:
+        if age < 20:
+            return "under_20"
+        elif age < 25:
+            return "20-24"
+        elif age < 30:
+            return "25-29"
+        elif age < 35:
+            return "30-34"
+        elif age < 40:
+            return "35-39"
+        else:
+            return "over_40"
+
+    event = get_event(db, event_id)
+    favorite_user_count = len(event.bookmark_users)
+    pv = sum([watch.count for watch in event.watched_user_link])
+    review_count = len(event.reviews)
+
+    age = {
+        "o": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+        "m": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+        "f": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+    }
+
+    for link in event.watched_user_link:
+        user_age = get_jst_now().year - link.user.birthday.year
+        age[link.user.sex][get_age_range(user_age)] += 1
+
+    return {
+        "favorite_user_count": favorite_user_count,
+        "pv": pv,
+        "review_count": review_count,
+        "sex": age,
+    }

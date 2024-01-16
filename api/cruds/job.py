@@ -51,6 +51,8 @@ def update_job(db: Session, id: int, job_update: schemas.JobCreate) -> models.Jo
 
 def get_job(db: Session, id: int) -> models.Job:
     job = db.query(models.Job).filter(models.Job.id == id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="Not Found")
     return job
 
 
@@ -137,17 +139,16 @@ def reject_application(db: Session, job_id: int, user_id: int) -> models.Applica
     return application
 
 
-def get_applications(db: Session, job_id: int) -> list[models.User]:
+def get_applications(db: Session, job_id: int) -> list[models.Application]:
     return (
-        db.query(models.User)
-        .join(models.Application)
-        .filter(models.Application.job_id == job_id)
-        .all()
+        db.query(models.Application).filter(models.Application.job_id == job_id).all()
     )
 
 
 def get_job_by_tag(db: Session, tag_name: str) -> list[models.Job]:
     tag = tag_crud.get_tag_by_name(db, tag_name)
+    if tag is None:
+        raise HTTPException(status_code=404, detail="Not Found")
     return tag.jobs
 
 
@@ -322,3 +323,67 @@ def unbookmark_job(db: Session, job_id: int, user_id: int):
     db.delete(bookmark)
     db.commit()
     return True
+
+
+def get_job_impressions(
+    db: Session,
+    job_id: int,
+):
+    def get_age_range(
+        age: int,
+    ) -> Literal["under_20", "20-24", "25-29", "30-34", "35-39", "over_40"]:
+        if age < 20:
+            return "under_20"
+        elif age < 25:
+            return "20-24"
+        elif age < 30:
+            return "25-29"
+        elif age < 35:
+            return "30-34"
+        elif age < 40:
+            return "35-39"
+        else:
+            return "over_40"
+
+    job = get_job(db, job_id)
+    favorite_user_count = len(job.bookmark_users)
+    pv = sum([watch.count for watch in job.watched_user_link])
+    review_count = len(job.reviews)
+
+    age = {
+        "o": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+        "m": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+        "f": {
+            "under_20": 0,
+            "20-24": 0,
+            "25-29": 0,
+            "30-34": 0,
+            "35-39": 0,
+            "over_40": 0,
+        },
+    }
+
+    for link in job.watched_user_link:
+        user_age = get_jst_now().year - link.user.birthday.year
+        age[link.user.sex][get_age_range(user_age)] += 1
+
+    return {
+        "favorite_user_count": favorite_user_count,
+        "pv": pv,
+        "review_count": review_count,
+        "sex": age,
+    }

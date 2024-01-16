@@ -180,18 +180,3 @@ class Event(EventListView):
     reviews: Optional[List[EventReview]]
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
     author: user_schema.User
-
-
-class BaseImpression(BaseModel):
-    age_u_20: int
-    age_24: int
-    age_29: int
-    age_34: int
-    age_39: int
-    age_u_40: int
-
-
-class EventImpression(BaseModel):
-    female: BaseImpression
-    male: BaseImpression
-    other: BaseImpression
