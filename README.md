@@ -167,10 +167,14 @@ EC2上で、このリポジトリをクローンし、以下のコマンドを�
 docker build -t reel-back:latest --platform linux/amd64 -f Dockerfile.cloud .
 ```
 docker image が作成されたら、以下のコマンドを実行することでコンテナが立ち上がる。
+ただし、理由がわからないが`.env`ファイルから環境変数を読み込めないため、環境変数を直接指定する必要がある。
 ```shell
 docker run -d -p 8000:8000 --name reel-back reel-back:latest
 ```
-ここでエラーが出る場合は、```.env```ファイルを作成していない、もしくは、必要になる環境変数が設定されていない可能性があるので、確認すること。
+今回はすでに`run.sh`を作成しているので、以下のコマンドを打つとサービスが立ち上がる。
+```shell
+sh run.sh
+```
 
 以上でデプロイは完了する。
 

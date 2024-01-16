@@ -12,6 +12,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from api.utils import get_jst_now
 
 load_dotenv()
+
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "db")
