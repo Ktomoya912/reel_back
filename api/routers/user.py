@@ -34,7 +34,11 @@ def create_user(
     user = user_crud.create_user(db, user_body)
     if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
-            request, background_tasks, settings=settings, email=user.email, db=db
+            request,
+            background_tasks,
+            settings=settings,
+            email_body=schemas.MailBase(email=user.email),
+            db=db,
         )
     return user
 
@@ -58,7 +62,11 @@ def create_user_company(
     user = user_crud.create_user_company(db, user_body)
     if settings.IS_PRODUCT and send_verification_email:
         auth_router.send_verification_email(
-            request, background_tasks, settings=settings, email=user.email, db=db
+            request,
+            background_tasks,
+            settings=settings,
+            email_body=schemas.MailBase(email=user.email),
+            db=db,
         )
     return user
 
