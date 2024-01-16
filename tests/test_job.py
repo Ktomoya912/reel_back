@@ -2,8 +2,8 @@ from fastapi.testclient import TestClient
 
 
 class TestJob:
-    def test_create_job(self, company_client: TestClient, api_path: str):
-        response = company_client.post(
+    def test_create_job(self, admin_client: TestClient, api_path: str):
+        response = admin_client.post(
             f"{api_path}/jobs/",
             json={
                 "name": "テスト求人",
@@ -43,8 +43,13 @@ class TestJob:
         assert len(response.json()) == 1
         assert response.json()[0]["name"] == "テスト求人"
 
-    def test_update_job(self, company_client: TestClient, api_path: str):
-        response = company_client.put(
+    def test_get_job(self, admin_client: TestClient, api_path: str):
+        response = admin_client.get(f"{api_path}/jobs/1")
+        assert response.status_code == 200, response.text
+        assert response.json()["name"] == "テスト求人"
+
+    def test_update_job(self, admin_client: TestClient, api_path: str):
+        response = admin_client.put(
             f"{api_path}/jobs/1",
             json={
                 "name": "テスト求人1",
@@ -69,7 +74,39 @@ class TestJob:
         assert response.status_code == 200, response.text
         assert response.json()["name"] == "テスト求人1"
 
-    def test_delete_job(self, company_client: TestClient, api_path: str):
-        response = company_client.delete(f"{api_path}/jobs/1")
+    def test_post_job_review(self, admin_client: TestClient, api_path: str):
+        response = admin_client.post(
+            f"{api_path}/jobs/1/review",
+            json={"title": "タイトル", "review": "レビュー", "review_point": 5},
+        )
+        assert response.status_code == 200, f"1. {response.text}"
+        assert response.json()["review_point"] == 5, f"2. {response.text}"
+        assert response.json()["title"] == "タイトル", f"1. {response.text}"
+        assert response.json()["review"] == "レビュー", f"1. {response.text}"
+
+    def test_apply_job(self, admin_client: TestClient, api_path: str):
+        response = admin_client.post(f"{api_path}/jobs/1/apply")
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "p"
+
+    def test_get_applications(self, admin_client: TestClient, api_path: str):
+        response = admin_client.get(f"{api_path}/jobs/1/application")
+        assert response.status_code == 200, response.text
+        assert len(response.json()) == 2
+        assert response.json()["job_id"] == 1
+        assert response.json()["users"][0]["user_id"] == 1
+
+    def test_bookmark_job(self, general_client: TestClient, api_path: str):
+        response = general_client.put(f"{api_path}/jobs/1/bookmark")
+        assert response.status_code == 200, response.text
+        assert response.json() is True
+        response = general_client.put(f"{api_path}/jobs/1/bookmark")
+        assert response.status_code == 200, response.text
+        assert response.json() is False
+
+    def test_delete_job(self, admin_client: TestClient, api_path: str):
+        response = admin_client.delete(f"{api_path}/jobs/1")
         assert response.status_code == 200, response.text
         assert response.json() == {"message": "Job deleted"}
+        response = admin_client.get(f"{api_path}/users/1")
+        assert response.json() != {}, response.json()

@@ -188,7 +188,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     """ユーザーIDを指定して、ユーザー情報を取得する。"""
     user = user_crud.get_user(db, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="User Not Found")
     return user
 
 

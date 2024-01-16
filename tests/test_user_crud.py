@@ -22,7 +22,7 @@ class TestUser:
         assert user.password != "password", user.password
 
     def test_read_user(self, db_session: Session):
-        user = user_crud.get_user(db_session, 1)
+        user = user_crud.get_user(db_session, 2)
         assert user.username == "username"
 
     def test_read_user_by_username(self, db_session: Session):

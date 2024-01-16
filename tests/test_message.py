@@ -4,7 +4,7 @@ MESSAGE = {
     "title": "this is message",
     "message": "string",
     "type": "J",
-    "user_list": [1],
+    "user_list": [2],
 }
 
 

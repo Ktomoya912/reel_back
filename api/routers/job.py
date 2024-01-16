@@ -1,20 +1,20 @@
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
 
 import api.cruds.job as job_crud
-import api.cruds.plan as plan_crud
 import api.cruds.message as message_crud
+import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.dependencies import (
     common_parameters,
     get_admin_user,
     get_company_user,
-    get_general_user,
     get_current_active_user,
     get_db,
+    get_general_user,
 )
 
 router = APIRouter(prefix="/jobs", tags=["求人"])
@@ -62,7 +62,7 @@ def get_jobs(
             return db_tag.jobs[common["offset"] : common["offset"] + common["limit"]]
     else:
         return job_crud.get_jobs(type=type, **common)
-    raise HTTPException(status_code=404, detail="Not found")
+    raise HTTPException(status_code=404, detail="Jobs Not found")
 
 
 @router.get("/recent/", response_model=list[schemas.JobListView], summary="最近の求人取得")
@@ -275,29 +275,17 @@ def reject_application(
     return response_data
 
 
-@router.post("/{job_id}/bookmark", summary="求人お気に入り登録")
+@router.put("/{job_id}/bookmark", summary="イベントお気に入り登録切り替え")
 def bookmark_job(
     job_id: int,
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
-    求人をお気に入り登録する。
-    失敗した場合は、Falseを返す。"""
-    return job_crud.bookmark_job(db, job_id, current_user.id)
-
-
-@router.delete("/{job_id}/bookmark", summary="求人お気に入り削除")
-def unbookmark_job(
-    job_id: int,
-    current_user: models.User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
-):
+    イベントをお気に入り登録切り替えを行う。
+    すでにお気に入り登録している場合は、お気に入り登録を解除する。
     """
-    求人のお気に入りを削除する。
-    失敗した場合は、Falseを返す。
-    """
-    return job_crud.unbookmark_job(db, job_id, current_user.id)
+    return job_crud.toggle_bookmark_job(db, job_id, current_user.id)
 
 
 @router.post("/{job_id}/review", response_model=schemas.JobReview, summary="レビュー作成")

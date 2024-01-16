@@ -19,12 +19,12 @@ class TestUser:
         response = general_client.get(f"{api_path}/users/")
         assert response.status_code == 200, response.text
         response_json = response.json()
-        assert len(response_json) == 1, response_json
-        assert response_json[0]["username"] == "username", response_json
+        assert len(response_json) == 2, response_json
+        assert response_json[1]["username"] == "username", response_json
 
     def test_update_user(self, general_client: TestClient, api_path: str):
         response = general_client.put(
-            f"{api_path}/users/1",
+            f"{api_path}/users/2",
             json={
                 "username": "username2",
                 "password": "password2",

@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -60,7 +60,7 @@ def get_events(
             return db_tag.events[common["offset"] : common["offset"] + common["limit"]]
     else:
         return event_crud.get_events(type=type, **common)
-    raise HTTPException(status_code=404, detail="Not found")
+    raise HTTPException(status_code=404, detail="Events Not found")
 
 
 @router.get(
@@ -102,7 +102,7 @@ def update_event(
     """
     event = event_crud.get_event(db, event_id)
     if not event:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Event Not found")
     elif event.user_id != current_user.id and current_user.user_type != "a":
         raise HTTPException(status_code=403, detail="You don't have permission")
     return event_crud.update_event(db, event_id, event_update)
@@ -120,7 +120,7 @@ def delete_event(
     """
     event = event_crud.get_event(db, event_id)
     if not event:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Event Not found")
     elif event.user_id != current_user.id and current_user.user_type != "a":
         raise HTTPException(status_code=403, detail="You don't have permission")
     event_crud.delete_event(db, event_id)
@@ -185,30 +185,17 @@ def purchase_event(
     return event
 
 
-@router.post("/{event_id}/bookmark", summary="イベントお気に入り登録")
+@router.put("/{event_id}/bookmark", summary="イベントお気に入り登録切り替え")
 def bookmark_event(
     event_id: int,
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
-    イベントをお気に入り登録する。
-    失敗した場合は、Falseを返す。
+    イベントをお気に入り登録切り替えを行う。
+    すでにお気に入り登録している場合は、お気に入り登録を解除する。
     """
-    return event_crud.bookmark_event(db, event_id, current_user.id)
-
-
-@router.delete("/{event_id}/bookmark", summary="イベントお気に入り登録解除")
-def unbookmark_event(
-    event_id: int,
-    current_user: models.User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
-):
-    """
-    イベントをお気に入り登録から削除する。
-    失敗した場合は、Falseを返す。
-    """
-    return event_crud.unbookmark_event(db, event_id, current_user.id)
+    return event_crud.toggle_bookmark_event(db, event_id, current_user.id)
 
 
 @router.post("/{event_id}/review", response_model=schemas.EventReview, summary="レビュー投稿")
@@ -244,7 +231,7 @@ def update_review(
         user_id = current_user.id
     review = event_crud.get_review(db, event_id, user_id)
     if not review:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Review Not found")
     return event_crud.update_review(db, event_id, user_id, review_update)
 
 
@@ -264,7 +251,7 @@ def delete_review(
         user_id = current_user.id
     review = event_crud.get_review(db, event_id, user_id)
     if not review:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Review Not found")
     return event_crud.delete_review(db, event_id, user_id)
 
 
