@@ -178,6 +178,7 @@ def get_jobs(
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
+    tag=None,
 ):
     query = db.query(models.Job)
     if type != "all":
@@ -191,6 +192,8 @@ def get_jobs(
                 models.Job.tags.any(models.Tag.name.contains(keyword)),
             )
         )
+    if tag is not None:
+        query = query.filter(models.Job.tags.any(models.Tag.name == tag))
     if sort == "id":
         query = get_jobs_by_id(query)
     elif sort == "review":

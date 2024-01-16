@@ -56,13 +56,7 @@ def get_jobs(
     これは、求人のステータスが「公開中」のもののみを取得するかどうかを指定する。
     何も指定しない状態ならば、すべての求人を取得する。
     """
-    if tag:
-        db_tag = tag_crud.get_tag_by_name(common["db"], tag)
-        if db_tag:
-            return db_tag.jobs[common["offset"] : common["offset"] + common["limit"]]
-    else:
-        return job_crud.get_jobs(type=type, **common)
-    raise HTTPException(status_code=404, detail="Jobs Not found")
+    return job_crud.get_jobs(type=type, **common, tag=tag)
 
 
 @router.get("/recent/", response_model=list[schemas.JobListView], summary="最近の求人取得")

@@ -120,6 +120,7 @@ def get_events(
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
+    tag=None,
 ):
     query = db.query(models.Event)
     if type != "all":
@@ -132,6 +133,8 @@ def get_events(
                 models.Event.tags.any(models.Tag.name.contains(keyword)),
             )
         )
+    if tag is not None:
+        query = query.filter(models.Event.tags.any(models.Tag.id == tag))
     if sort == "id":
         query = get_events_by_id(query)
     elif sort == "review":

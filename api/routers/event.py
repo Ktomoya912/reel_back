@@ -7,13 +7,9 @@ import api.cruds.event as event_crud
 import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
-from api.dependencies import (
-    common_parameters,
-    get_admin_user,
-    get_company_user,
-    get_current_active_user,
-    get_db,
-)
+from api.dependencies import (common_parameters, get_admin_user,
+                              get_company_user, get_current_active_user,
+                              get_db)
 
 router = APIRouter(prefix="/events", tags=["イベント"])
 
@@ -54,13 +50,7 @@ def get_events(
     これは、イベントのステータスが「公開中」のもののみを取得するかどうかを指定する。
     何も指定しない状態ならば、すべてのイベントを取得する。
     """
-    if tag:
-        db_tag = tag_crud.get_tag_by_name(common["db"], tag)
-        if db_tag:
-            return db_tag.events[common["offset"] : common["offset"] + common["limit"]]
-    else:
-        return event_crud.get_events(type=type, **common)
-    raise HTTPException(status_code=404, detail="Events Not found")
+    return event_crud.get_events(type=type, **common, tag=tag)
 
 
 @router.get(
