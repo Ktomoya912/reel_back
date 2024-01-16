@@ -95,7 +95,7 @@ def get_event_watched(
     """
     イベントの閲覧履歴を取得する。
     """
-    return [link.event for link in current_user.event_watched]
+    return [link.event for link in current_user.event_watched_link]
 
 
 @router.get(
@@ -140,7 +140,7 @@ def get_job_watched(
     """
     求人の閲覧履歴を取得する。
     """
-    return [link.job for link in current_user.job_watched]
+    return [link.job for link in current_user.job_watched_link]
 
 
 @router.get(
