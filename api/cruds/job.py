@@ -347,7 +347,7 @@ def get_job_impressions(
 
     job = get_job(db, job_id)
     favorite_user_count = len(job.bookmark_users)
-    pv = sum([watch.count for watch in job.watched_user_link])
+    pv = len(job.watched_user_link)
     review_count = len(job.reviews)
 
     age = {

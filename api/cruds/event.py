@@ -291,7 +291,7 @@ def get_event_impressions(
 
     event = get_event(db, event_id)
     favorite_user_count = len(event.bookmark_users)
-    pv = sum([watch.count for watch in event.watched_user_link])
+    pv = len(event.watched_user_link)
     review_count = len(event.reviews)
 
     age = {
