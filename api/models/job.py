@@ -7,14 +7,18 @@ from api.utils import get_jst_now
 
 class JobTime(BaseModel):
     id = Column(Integer, primary_key=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"))
+    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"))
     start_time = Column(DateTime)
     end_time = Column(DateTime)
 
 
 class JobTag(BaseModel):
-    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
+    job_id = Column(
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id = Column(
+        Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
+    )
 
 
 class JobReview(BaseModel):
@@ -23,20 +27,28 @@ class JobReview(BaseModel):
     review = Column(Text)
     review_point = Column(Integer)
 
-    user_id = Column(Integer, ForeignKey("users.id"))
-    job_id = Column(Integer, ForeignKey("jobs.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"))
 
 
 class JobBookmark(BaseModel):
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    job_id = Column(
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True
+    )
 
 
 class JobWatched(BaseModel):
     __tablename__ = "job_watched"
 
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    job_id = Column(
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True
+    )
     count = Column(Integer, default=1)
 
     user = relationship("User", back_populates="job_watched_link")
@@ -59,16 +71,31 @@ class Job(BaseModel):
     user_id = Column(Integer, ForeignKey("users.id"))
     purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
-    job_times = relationship("JobTime", backref="job")
-    tags = relationship("Tag", secondary="job_tags", back_populates="jobs")
-    reviews = relationship("JobReview", backref="job")
-    bookmark_users = relationship(
-        "User", secondary="job_bookmarks", back_populates="job_bookmarks"
+    author = relationship("User", back_populates="job_postings")
+    job_times = relationship(
+        "JobTime",
+        backref="job",
     )
-    applications = relationship("Application", back_populates="job")
-    watched_user_link = relationship(
-        "JobWatched",
+    tags = relationship(
+        "Tag",
+        secondary="job_tags",
+        back_populates="jobs",
+    )
+    reviews = relationship(
+        "JobReview",
+        backref="job",
+    )
+    bookmark_users = relationship(
+        "User",
+        secondary="job_bookmarks",
+        back_populates="job_bookmarks",
+    )
+    applications = relationship(
+        "Application",
         back_populates="job",
+    )
+    watched_user_link = relationship(
+        "JobWatched", back_populates="job", cascade="all, delete-orphan"
     )
     purchase = relationship("Purchase", backref="job")
 

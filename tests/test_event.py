@@ -26,8 +26,10 @@ CREATE_EVENT = {
 
 
 class TestEvent:
-    def test_create_event(self, company_client: TestClient, api_path: str):
-        response = company_client.post(
+    def test_create_event(
+        self, company_client: TestClient, api_path: str, admin_client: TestClient
+    ):
+        response = admin_client.post(
             f"{api_path}/events/",
             json=CREATE_EVENT,
         )
@@ -49,8 +51,15 @@ class TestEvent:
         assert len(response.json()) == 1
         assert response.json()[0]["name"] == "イベント名"
 
-    def test_update_event(self, company_client: TestClient, api_path: str):
-        response = company_client.put(
+    def test_get_event(self, admin_client: TestClient, api_path: str):
+        response = admin_client.get(f"{api_path}/events/1")
+        assert response.status_code == 200, response.text
+        assert response.json()["name"] == "イベント名"
+
+    def test_update_event(
+        self, company_client: TestClient, api_path: str, admin_client: TestClient
+    ):
+        response = admin_client.put(
             f"{api_path}/events/1",
             json={
                 "name": "イベント名1",
@@ -79,7 +88,27 @@ class TestEvent:
         assert response.status_code == 200, response.text
         assert response.json()["name"] == "イベント名1"
 
-    def test_delete_event(self, company_client: TestClient, api_path: str):
-        response = company_client.delete(f"{api_path}/events/1")
+    def test_post_event_review(self, admin_client: TestClient, api_path: str):
+        response = admin_client.post(
+            f"{api_path}/events/1/review",
+            json={"title": "タイトル", "review": "レビュー", "review_point": 5},
+        )
+        assert response.status_code == 200, f"1. {response.text}"
+        assert response.json()["review_point"] == 5, f"2. {response.text}"
+        assert response.json()["title"] == "タイトル", f"1. {response.text}"
+        assert response.json()["review"] == "レビュー", f"1. {response.text}"
+
+    def test_bookmark_event(self, general_client: TestClient, api_path: str):
+        response = general_client.put(f"{api_path}/events/1/bookmark")
+        assert response.status_code == 200, response.text
+        assert response.json() is True
+        response = general_client.put(f"{api_path}/events/1/bookmark")
+        assert response.status_code == 200, response.text
+        assert response.json() is False
+
+    def test_delete_event(self, admin_client: TestClient, api_path: str):
+        response = admin_client.delete(f"{api_path}/events/1")
         assert response.status_code == 200, response.text
         assert response.json() == {"message": "Event Deleted"}
+        response = admin_client.get(f"{api_path}/users/1")
+        assert response.json() != {}, response.json()

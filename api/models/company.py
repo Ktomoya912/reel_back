@@ -16,4 +16,4 @@ class Company(BaseModel):
     email = Column(String(255), nullable=False)
     homepage = Column(String(255), nullable=False)
     representative = Column(String(255), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))

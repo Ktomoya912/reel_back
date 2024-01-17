@@ -1,9 +1,9 @@
 import datetime
 from typing import Literal
 
+from fastapi import HTTPException
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
-from fastapi import HTTPException
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
@@ -57,7 +57,7 @@ def update_event(
 def get_event(db: Session, id: int) -> models.Event:
     event = db.query(models.Event).filter(models.Event.id == id).first()
     if event is None:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Event Not Found")
     return event
 
 
@@ -91,7 +91,7 @@ def delete_event(db: Session, id: int) -> bool:
 def get_event_by_tag(db: Session, tag_name: str) -> list[models.Event]:
     tag = tag_crud.get_tag_by_name(db, tag_name)
     if tag is None:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Tag Not Found")
     return tag.events
 
 
@@ -120,6 +120,7 @@ def get_events(
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
+    tag="",
 ):
     query = db.query(models.Event)
     if type != "all":
@@ -132,6 +133,8 @@ def get_events(
                 models.Event.tags.any(models.Tag.name.contains(keyword)),
             )
         )
+    if tag:
+        query = query.filter(models.Event.tags.any(models.Tag.id == tag))
     if sort == "id":
         query = get_events_by_id(query)
     elif sort == "review":
@@ -236,24 +239,7 @@ def delete_review(db: Session, event_id: int, user_id: int):
     return True
 
 
-def bookmark_event(db: Session, event_id: int, user_id: int):
-    if (
-        db.query(models.EventBookmark)
-        .filter(
-            models.EventBookmark.user_id == user_id,
-            models.EventBookmark.event_id == event_id,
-        )
-        .first()
-    ):
-        return False
-    event_bookmark = models.EventBookmark(user_id=user_id, event_id=event_id)
-    db.add(event_bookmark)
-    db.commit()
-    db.refresh(event_bookmark)
-    return True
-
-
-def unbookmark_event(db: Session, event_id: int, user_id: int):
+def toggle_bookmark_event(db: Session, event_id: int, user_id: int):
     bookmark = (
         db.query(models.EventBookmark)
         .filter(
@@ -262,11 +248,16 @@ def unbookmark_event(db: Session, event_id: int, user_id: int):
         )
         .first()
     )
-    if not bookmark:
+    if bookmark:
+        db.delete(bookmark)
+        db.commit()
         return False
-    db.delete(bookmark)
-    db.commit()
-    return True
+    else:
+        bookmark = models.EventBookmark(user_id=user_id, event_id=event_id)
+        db.add(bookmark)
+        db.commit()
+        db.refresh(bookmark)
+        return True
 
 
 def get_event_impressions(

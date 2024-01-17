@@ -17,8 +17,8 @@ class Plan(BaseModel):
 
 class Purchase(BaseModel):
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    plan_id = Column(Integer, ForeignKey("plans.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    plan_id = Column(Integer, ForeignKey("plans.id", ondelete="CASCADE"))
     # 契約数
     contract_amount = Column(Integer, default=1)
     is_paid = Column(Boolean, default=False)

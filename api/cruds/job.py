@@ -1,9 +1,10 @@
 import datetime
 from typing import Literal
 
+from fastapi import HTTPException
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import func, or_
-from fastapi import HTTPException
+
 import api.cruds.tag as tag_crud
 from api import models, schemas
 from api.utils import get_jst_now
@@ -52,7 +53,7 @@ def update_job(db: Session, id: int, job_update: schemas.JobCreate) -> models.Jo
 def get_job(db: Session, id: int) -> models.Job:
     job = db.query(models.Job).filter(models.Job.id == id).first()
     if job is None:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Job Not Found")
     return job
 
 
@@ -148,7 +149,7 @@ def get_applications(db: Session, job_id: int) -> list[models.Application]:
 def get_job_by_tag(db: Session, tag_name: str) -> list[models.Job]:
     tag = tag_crud.get_tag_by_name(db, tag_name)
     if tag is None:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Tag Not Found")
     return tag.jobs
 
 
@@ -177,6 +178,7 @@ def get_jobs(
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
+    tag="",
 ):
     query = db.query(models.Job)
     if type != "all":
@@ -190,6 +192,8 @@ def get_jobs(
                 models.Job.tags.any(models.Tag.name.contains(keyword)),
             )
         )
+    if tag:
+        query = query.filter(models.Job.tags.any(models.Tag.name == tag))
     if sort == "id":
         query = get_jobs_by_id(query)
     elif sort == "review":
@@ -292,24 +296,7 @@ def delete_review(db: Session, job_id: int, user_id: int):
     return True
 
 
-def bookmark_job(db: Session, job_id: int, user_id: int):
-    if (
-        db.query(models.JobBookmark)
-        .filter(
-            models.JobBookmark.user_id == user_id,
-            models.JobBookmark.job_id == job_id,
-        )
-        .first()
-    ):
-        return False
-    job_bookmark = models.JobBookmark(user_id=user_id, job_id=job_id)
-    db.add(job_bookmark)
-    db.commit()
-    db.refresh(job_bookmark)
-    return True
-
-
-def unbookmark_job(db: Session, job_id: int, user_id: int):
+def toggle_bookmark_job(db: Session, job_id: int, user_id: int):
     bookmark = (
         db.query(models.JobBookmark)
         .filter(
@@ -318,11 +305,16 @@ def unbookmark_job(db: Session, job_id: int, user_id: int):
         )
         .first()
     )
-    if not bookmark:
+    if bookmark:
+        db.delete(bookmark)
+        db.commit()
         return False
-    db.delete(bookmark)
-    db.commit()
-    return True
+    else:
+        bookmark = models.JobBookmark(user_id=user_id, job_id=job_id)
+        db.add(bookmark)
+        db.commit()
+        db.refresh(bookmark)
+        return True
 
 
 def get_job_impressions(

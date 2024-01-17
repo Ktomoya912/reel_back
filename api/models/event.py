@@ -7,7 +7,7 @@ from api.utils import get_jst_now
 
 class EventTime(BaseModel):
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("events.id"))
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"))
     start_time = Column(DateTime)
     end_time = Column(DateTime)
 
@@ -18,25 +18,37 @@ class EventReview(BaseModel):
     review = Column(Text)
     review_point = Column(Integer)
 
-    user_id = Column(Integer, ForeignKey("users.id"))
-    event_id = Column(Integer, ForeignKey("events.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"))
 
 
 class EventTag(BaseModel):
-    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
+    event_id = Column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id = Column(
+        Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
+    )
 
 
 class EventBookmark(BaseModel):
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    event_id = Column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True
+    )
 
 
 class EventWatched(BaseModel):
     __tablename__ = "event_watched"
 
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    event_id = Column(Integer, ForeignKey("events.id"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    event_id = Column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True
+    )
 
     count = Column(Integer, default=1)
 
@@ -64,15 +76,27 @@ class Event(BaseModel):
     user_id = Column(Integer, ForeignKey("users.id"))
     purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
-    event_times = relationship("EventTime", backref="event")
-    tags = relationship("Tag", secondary="event_tags", back_populates="events")
-    reviews = relationship("EventReview", backref="event")
+    author = relationship("User", back_populates="event_postings")
+    event_times = relationship(
+        "EventTime",
+        backref="event",
+    )
+    tags = relationship(
+        "Tag",
+        secondary="event_tags",
+        back_populates="events",
+    )
+    reviews = relationship(
+        "EventReview",
+        backref="event",
+    )
     bookmark_users = relationship(
-        "User", secondary="event_bookmarks", back_populates="event_bookmarks"
+        "User",
+        secondary="event_bookmarks",
+        back_populates="event_bookmarks",
     )
     watched_user_link = relationship(
-        "EventWatched",
-        back_populates="event",
+        "EventWatched", back_populates="event", cascade="all, delete-orphan"
     )
     purchase = relationship("Purchase", backref="event")
 

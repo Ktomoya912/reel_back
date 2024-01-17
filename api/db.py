@@ -11,6 +11,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from api.utils import get_jst_now
 
+load_dotenv()
+
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "db")
@@ -66,7 +68,6 @@ def get_db() -> Session:
 def make_admin_user():
     from api.models import user
 
-    load_dotenv()
     if os.getenv("ADMIN_PASSWORD") is None:
         raise NoEnvironmentError("ADMIN_PASSWORD")
     if os.getenv("ADMIN_EMAIL") is None:
