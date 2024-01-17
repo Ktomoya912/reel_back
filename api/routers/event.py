@@ -7,9 +7,13 @@ import api.cruds.event as event_crud
 import api.cruds.plan as plan_crud
 import api.cruds.tag as tag_crud
 from api import models, schemas
-from api.dependencies import (common_parameters, get_admin_user,
-                              get_company_user, get_current_active_user,
-                              get_db)
+from api.dependencies import (
+    common_parameters,
+    get_admin_user,
+    get_company_user,
+    get_current_active_user,
+    get_db,
+)
 
 router = APIRouter(prefix="/events", tags=["イベント"])
 
@@ -130,6 +134,8 @@ def activate_event(
     公開できるのは、管理者のみである。
     """
     event = event_crud.get_event(db, event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event Not Found")
     event.status = "active"
     db.commit()
     db.refresh(event)
@@ -185,6 +191,9 @@ def bookmark_event(
     イベントをお気に入り登録切り替えを行う。
     すでにお気に入り登録している場合は、お気に入り登録を解除する。
     """
+    event = event_crud.get_event(db, event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event Not Found")
     return event_crud.toggle_bookmark_event(db, event_id, current_user.id)
 
 
@@ -198,6 +207,9 @@ def post_review(
     """
     イベントにレビューを投稿する。
     """
+    event = event_crud.get_event(db, event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event Not Found")
     review = event_crud.get_review(db, event_id, current_user.id)
     if review:
         raise HTTPException(status_code=400, detail="Already posted")
