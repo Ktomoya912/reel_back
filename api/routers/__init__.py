@@ -1,6 +1,8 @@
-from pathlib import Path
 import os
-from fastapi import APIRouter, Depends, File, UploadFile
+from pathlib import Path
+
+import boto3
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from ..dependencies import get_company_user
 from ..utils import get_jst_now
@@ -21,4 +23,22 @@ router.include_router(user.router)
 def upload_image(file: UploadFile = File(...), current_user=Depends(get_company_user)):
     file_ext = Path(file.filename).suffix
     file_name = f"{current_user.id}_{get_jst_now().strftime('%Y%m%d%H%M%S')}{file_ext}"
-    return {"filename": file_name}
+    need_env = [
+        "AWS_S3_BUCKET",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_DEFAULT_REGION",
+        "AWS_SESSION_TOKEN",
+    ]
+    bucket = os.getenv(need_env[0])
+    for env in need_env:
+        if os.getenv(env) is None:
+            raise HTTPException(status_code=500, detail=f"{env} is not set")
+    s3 = boto3.client("s3")
+    try:
+        s3.head_bucket(Bucket=bucket)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    s3.upload_fileobj(file.file, bucket, file_name, ExtraArgs={"ACL": "public-read"})
+    return {"url": f"https://{bucket}.s3.amazonaws.com/{file_name}"}
