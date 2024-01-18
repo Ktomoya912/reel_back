@@ -180,6 +180,9 @@ def apply_job(
     """
     求人に応募する。
     """
+    job = job_crud.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job Not Found")
     response_data = job_crud.apply_job(db, job_id, current_user)
     message = message_crud.create_message(
         db,
@@ -279,6 +282,9 @@ def bookmark_job(
     イベントをお気に入り登録切り替えを行う。
     すでにお気に入り登録している場合は、お気に入り登録を解除する。
     """
+    job = job_crud.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job Not Found")
     return job_crud.toggle_bookmark_job(db, job_id, current_user.id)
 
 
@@ -292,6 +298,9 @@ def post_review(
     """
     求人にレビューを投稿する。
     """
+    job = job_crud.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job Not Found")
     return job_crud.create_review(db, job_id, current_user.id, review)
 
 
@@ -308,6 +317,9 @@ def update_review(
     オプションとしてuser_idを受け取ることができるが、これは管理者のみが指定できる。
     user_idを指定しない場合は、ログインしているユーザーのレビューを更新する。
     """
+    job = job_crud.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job Not Found")
     if user_id is None or current_user.user_type != "a":
         user_id = current_user.id
     review = job_crud.get_review(db, job_id, user_id)
