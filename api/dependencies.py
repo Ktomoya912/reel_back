@@ -8,7 +8,6 @@ from sqlalchemy.orm.session import Session
 
 import api.cruds.user as user_crud
 from api import config, models, schemas
-from api.db import Session
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALGORITHM = "HS256"
@@ -42,6 +41,9 @@ def common_parameters(
     order: str = "asc",
     offset: int = 0,
     limit: int = 20,
+    type: Literal["all", "active", "inactive", "draft"] = "all",
+    user_id: int = None,
+    target: Literal["favorite", "history", "posted", "apply"] = None,
 ):
     return {
         "db": db,
@@ -50,6 +52,8 @@ def common_parameters(
         "offset": offset,
         "limit": limit,
         "keyword": keyword,
+        "user_id": user_id,
+        "target": target,
     }
 
 

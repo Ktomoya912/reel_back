@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -38,7 +38,6 @@ def create_event(
 def get_events(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
-    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     イベントの一覧を取得する。
@@ -54,7 +53,7 @@ def get_events(
     これは、イベントのステータスが「公開中」のもののみを取得するかどうかを指定する。
     何も指定しない状態ならば、すべてのイベントを取得する。
     """
-    return event_crud.get_events(type=type, **common, tag=tag)
+    return event_crud.get_events(**common, tag=tag)
 
 
 @router.get(

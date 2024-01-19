@@ -172,41 +172,54 @@ def get_recent_jobs(db: Session) -> list[models.Job]:
 
 def get_jobs(
     db: Session,
-    type: Literal["all", "active", "inactive", "draft"] = "all",
+    type: Literal["all", "active", "inactive", "draft", "posted"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
-    tag="",
+    tag_name="",
+    user_id: int = None,
+    target: Literal["favorite", "history", "posted"] = None,
 ):
-    query = db.query(models.Job)
-    if type != "all":
-        query = query.filter(models.Job.status == type)
-
+    stmt = db.query(models.Job)
+    if type == "posted":
+        stmt = stmt.filter(
+            or_(models.Job.status == "active", models.Job.status == "inactive")
+        )
+    elif type != "all":
+        stmt = stmt.filter(models.Job.status == type)
     if keyword != "":
-        query = query.filter(
+        stmt = stmt.filter(
             or_(
                 models.Job.name.contains(keyword),
-                models.Job.description.contains(keyword),
                 models.Job.tags.any(models.Tag.name.contains(keyword)),
             )
         )
-    if tag:
-        query = query.filter(models.Job.tags.any(models.Tag.name == tag))
+    if user_id:
+        if target == "favorite":
+            stmt = stmt.join(models.JobBookmark).filter(
+                models.JobBookmark.user_id == user_id
+            )
+        elif target == "history":
+            stmt = stmt.join(models.JobWatched).filter(
+                models.JobWatched.user_id == user_id
+            )
+        elif target == "posted":
+            stmt = stmt.filter(models.Job.user_id == user_id)
+    if tag_name:
+        stmt = stmt.filter(models.Job.tags.any(models.Tag.name == tag_name))
     if sort == "id":
-        query = get_jobs_by_id(query)
+        stmt = get_jobs_by_id(stmt)
     elif sort == "review":
-        query = get_jobs_by_review(query)
-    elif sort == "watched":
-        query = get_jobs_by_watched(query)
+        stmt = get_jobs_by_review(stmt)
     elif sort == "favorite":
-        query = get_jobs_by_bookmark(query)
+        stmt = get_jobs_by_bookmark(stmt, target)
     elif sort == "pv":
-        query = get_jobs_by_pv(query)
+        stmt = get_jobs_by_pv(stmt, target)
     else:
-        query = get_jobs_by_recent(query)
-    return query.offset(offset).limit(limit).all()
+        stmt = get_jobs_by_recent(stmt)
+    return stmt.offset(offset).limit(limit).all()
 
 
 # Reviewの評価平均順にイベントを取得
@@ -218,15 +231,9 @@ def get_jobs_by_review(query):
     )
 
 
-def get_jobs_by_pv(query):
-    return (
-        query.join(models.JobWatched)
-        .order_by(func.sum(models.JobWatched.count).desc())
-        .group_by(models.Job.id)
-    )
-
-
-def get_jobs_by_watched(query):
+def get_jobs_by_pv(query, target):
+    if "watched" == target:
+        return query.order_by(func.count(models.JobWatched.user_id).desc())
     return (
         query.join(models.JobWatched)
         .order_by(func.sum(models.JobWatched.count).desc())
@@ -245,10 +252,15 @@ def get_jobs_by_recent(query):
         query.join(models.JobTime)
         .filter(models.JobTime.start_time >= now)
         .order_by(models.JobTime.start_time)
+        .group_by(models.Job.id)
     )
 
 
-def get_jobs_by_bookmark(query):
+def get_jobs_by_bookmark(query, target):
+    if "favorite" == target:
+        return query.order_by(func.count(models.JobBookmark.user_id).desc()).group_by(
+            models.Job.id
+        )
     return (
         query.outerjoin(models.JobBookmark)
         .order_by(func.count(models.JobBookmark.user_id).desc())

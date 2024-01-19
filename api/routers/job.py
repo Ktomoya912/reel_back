@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -40,7 +40,6 @@ def create_job(
 def get_jobs(
     common: Annotated[dict, Depends(common_parameters)],
     tag: str = "",
-    type: Literal["all", "active", "inactive", "draft"] = "all",
 ):
     """
     求人の一覧を取得する。
@@ -56,7 +55,7 @@ def get_jobs(
     これは、求人のステータスが「公開中」のもののみを取得するかどうかを指定する。
     何も指定しない状態ならば、すべての求人を取得する。
     """
-    return job_crud.get_jobs(type=type, **common, tag=tag)
+    return job_crud.get_jobs(**common, tag_name=tag)
 
 
 @router.get("/recent/", response_model=list[schemas.JobListView], summary="最近の求人取得")
