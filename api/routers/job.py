@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -117,35 +117,23 @@ def delete_job(
     return {"message": "Job deleted"}
 
 
-@router.put("/{job_id}/activate", response_model=schemas.JobListView, summary="求人公開")
-def activate_job(
+@router.put(
+    "/{job_id}/change-status", response_model=schemas.JobListView, summary="求人ステータス変更"
+)
+def change_job_status(
     job_id: int,
+    status: Literal["active", "inactive", "draft"],
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_admin_user),
 ):
     """
-    求人を公開する。
+    求人のステータスを変更する。
     このエンドポイントは管理者のみがアクセスできる。
     """
     job = job_crud.get_job(db, job_id)
-    job.status = "active"
-    db.commit()
-    db.refresh(job)
-    return job
-
-
-@router.put("/{job_id}/deactivate", response_model=schemas.JobListView, summary="求人非公開")
-def deactivate_job(
-    job_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_admin_user),
-):
-    """
-    求人を非公開にする。
-    このエンドポイントは管理者のみがアクセスできる。
-    """
-    job = job_crud.get_job(db, job_id)
-    job.status = "inactive"
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job.status = status
     db.commit()
     db.refresh(job)
     return job

@@ -172,7 +172,7 @@ def get_recent_jobs(db: Session) -> list[models.Job]:
 
 def get_jobs(
     db: Session,
-    type: Literal["all", "active", "inactive", "draft", "posted"] = "all",
+    status: Literal["all", "active", "inactive", "draft", "posted"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
@@ -183,12 +183,12 @@ def get_jobs(
     target: Literal["favorite", "history", "posted"] = None,
 ):
     stmt = db.query(models.Job)
-    if type == "posted":
+    if status == "posted":
         stmt = stmt.filter(
             or_(models.Job.status == "active", models.Job.status == "inactive")
         )
-    elif type != "all":
-        stmt = stmt.filter(models.Job.status == type)
+    elif status != "all":
+        stmt = stmt.filter(models.Job.status == status)
     if keyword != "":
         stmt = stmt.filter(
             or_(
@@ -235,7 +235,7 @@ def get_jobs_by_pv(query, target):
     if "watched" == target:
         return query.order_by(func.count(models.JobWatched.user_id).desc())
     return (
-        query.join(models.JobWatched)
+        query.outerjoin(models.JobWatched)
         .order_by(func.sum(models.JobWatched.count).desc())
         .group_by(models.Job.id)
     )
@@ -252,7 +252,6 @@ def get_jobs_by_recent(query):
         query.join(models.JobTime)
         .filter(models.JobTime.start_time >= now)
         .order_by(models.JobTime.start_time)
-        .group_by(models.Job.id)
     )
 
 

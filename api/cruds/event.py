@@ -114,7 +114,7 @@ def get_recent_events(db: Session) -> list[models.Event]:
 
 def get_events(
     db: Session,
-    type: Literal["all", "active", "inactive", "draft"] = "all",
+    status: Literal["all", "active", "inactive", "draft"] = "all",
     keyword: str = "",
     sort: str = "new",
     order: str = "desc",
@@ -125,8 +125,8 @@ def get_events(
     target: Literal["favorite", "history", "posted", "apply"] = None,
 ):
     query = db.query(models.Event)
-    if type != "all":
-        query = query.filter(models.Event.status == type)
+    if status != "all":
+        query = query.filter(models.Event.status == status)
     if keyword != "":
         query = query.filter(
             or_(
@@ -162,7 +162,7 @@ def get_events_by_review(query):
 
 def get_events_by_pv(query):
     return (
-        query.join(models.EventWatched)
+        query.outerjoin(models.EventWatched)
         .order_by(func.sum(models.EventWatched.count).desc())
         .group_by(models.Event.id)
     )
