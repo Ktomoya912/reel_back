@@ -116,39 +116,52 @@ def get_events(
     db: Session,
     status: Literal["all", "active", "inactive", "draft"] = "all",
     keyword: str = "",
-    sort: str = "new",
+    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
-    tag="",
+    tag_name="",
     user_id: int = None,
     target: Literal["favorite", "history", "posted", "apply"] = None,
 ):
-    query = db.query(models.Event)
-    if status != "all":
-        query = query.filter(models.Event.status == status)
+    stmt = db.query(models.Event)
+    if status == "posted":
+        stmt = stmt.filter(
+            or_(models.Event.status == "active", models.Event.status == "inactive")
+        )
+    elif status != "all":
+        stmt = stmt.filter(models.Event.status == status)
     if keyword != "":
-        query = query.filter(
+        stmt = stmt.filter(
             or_(
                 models.Event.name.contains(keyword),
                 models.Event.tags.any(models.Tag.name.contains(keyword)),
             )
         )
-    if tag:
-        query = query.filter(models.Event.tags.any(models.Tag.name == tag))
+    if user_id:
+        if target == "favorite":
+            stmt = stmt.join(models.EventBookmark).filter(
+                models.EventBookmark.user_id == user_id
+            )
+        elif target == "history":
+            stmt = stmt.join(models.EventWatched).filter(
+                models.EventWatched.user_id == user_id
+            )
+        elif target == "posted":
+            stmt = stmt.filter(models.Event.user_id == user_id)
+    if tag_name:
+        stmt = stmt.filter(models.Event.tags.any(models.Tag.name == tag_name))
     if sort == "id":
-        query = get_events_by_id(query)
+        stmt = get_events_by_id(stmt)
     elif sort == "review":
-        query = get_events_by_review(query)
-    elif sort == "watched":
-        query = get_events_by_watched(query)
+        stmt = get_events_by_review(stmt)
     elif sort == "favorite":
-        query = get_events_by_bookmark(query)
+        stmt = get_events_by_bookmark(stmt, target)
     elif sort == "pv":
-        query = get_events_by_pv(query)
+        stmt = get_events_by_pv(stmt, target)
     else:
-        query = get_events_by_recent(query)
-    return query.offset(offset).limit(limit).all()
+        stmt = get_events_by_recent(stmt)
+    return stmt.offset(offset).limit(limit).all()
 
 
 # Reviewの評価平均順にイベントを取得
@@ -160,17 +173,13 @@ def get_events_by_review(query):
     )
 
 
-def get_events_by_pv(query):
+def get_events_by_pv(query, target):
+    if target == "wathced":
+        return query.order_by(func.count(models.EventWatched.user_id).desc()).group_by(
+            models.Event.id
+        )
     return (
         query.outerjoin(models.EventWatched)
-        .order_by(func.sum(models.EventWatched.count).desc())
-        .group_by(models.Event.id)
-    )
-
-
-def get_events_by_watched(query):
-    return (
-        query.join(models.EventWatched)
         .order_by(func.sum(models.EventWatched.count).desc())
         .group_by(models.Event.id)
     )
@@ -190,7 +199,11 @@ def get_events_by_recent(query):
     )
 
 
-def get_events_by_bookmark(query):
+def get_events_by_bookmark(query, target):
+    if target == "favorite":
+        return query.order_by(func.count(models.EventBookmark.user_id).desc()).group_by(
+            models.Event.id
+        )
     return (
         query.outerjoin(models.EventBookmark)
         .order_by(func.count(models.EventBookmark.user_id).desc())

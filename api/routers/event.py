@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm.session import Session
@@ -40,20 +40,34 @@ def get_events(
     tag: str = "",
 ):
     """
-    イベントの一覧を取得する。
-    パラメータとして、limit, offset, sort, order, keywordを受け取る。
-    それぞれ、「取得する件数」「取得する開始位置」「ソートする項目」「ソート順」「検索キーワード」を表す。
-    ただし、現状「order」は機能していないので無視してよい。
+    ## イベントの一覧を取得する。
 
-    続いて、tagを受け取る。
-    これは、イベントのタグを指定する。
-    もし、タグを指定している場合は、そのタグに紐づくイベントのみを取得する。
+        - limit: 取得するイベントの最大数を指定する。デフォルトは100。
+        - offset: 取得するイベントの開始位置を指定する。デフォルトは0。
+        - sort: ソートする項目を指定する。デフォルトはid。
+        - order: ソート順を指定する。デフォルトはasc。(現状機能していない)
+        - keyword: キーワードを指定する。指定した場合は、タイトルとタグのどちらかにキーワードが含まれるイベントを取得する。
+        - status: ステータスを指定する。デフォルトはall。
+        - user_id: ユーザーIDを指定する。
+        - target: 絞り込み内容を指定する。user_idを指定しないと無視される。
 
-    最後に、only_activeを受け取る。
-    これは、イベントのステータスが「公開中」のもののみを取得するかどうかを指定する。
-    何も指定しない状態ならば、すべてのイベントを取得する。
+
+    ## status:
+
+        - all: 全てのイベントを取得する。
+        - active: ステータスが「公開中」のイベントを取得する。
+        - inactive: ステータスが「非公開」のイベントを取得する。
+        - draft: ステータスが「下書き」のイベントを取得する。
+        - posted: ステータスが「公開中」かつ、公開日が過去のイベントを取得する。
+
+
+    ## target:
+
+        - favorite: お気に入り登録しているイベントを取得する。
+        - favorite: お気に入り登録しているイベントを取得する。
+        - posted: 自分が作成したイベントを取得する。
     """
-    return event_crud.get_events(**common, tag=tag)
+    return event_crud.get_events(**common, tag_name=tag)
 
 
 @router.get(
@@ -121,40 +135,24 @@ def delete_event(
 
 
 @router.put(
-    "/{event_id}/activate", response_model=schemas.EventListView, summary="イベント公開"
+    "/{event_id}/change-status",
+    response_model=schemas.EventListView,
+    summary="イベントステータス変更",
 )
-def activate_event(
+def change_event_status(
     event_id: int,
+    status: Literal["active", "inactive", "draft"],
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_admin_user),
 ):
     """
-    イベントを公開する。
-    公開できるのは、管理者のみである。
+    イベントのステータスを変更する。
+    このエンドポイントは管理者のみがアクセスできる。
     """
     event = event_crud.get_event(db, event_id)
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event Not Found")
-    event.status = "active"
-    db.commit()
-    db.refresh(event)
-    return event
-
-
-@router.put(
-    "/{event_id}/deactivate", response_model=schemas.EventListView, summary="イベント非公開"
-)
-def deactivate_event(
-    event_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_admin_user),
-):
-    """
-    イベントを非公開にする。
-    公開できるのは、管理者のみである。
-    """
-    event = event_crud.get_event(db, event_id)
-    event.status = "inactive"
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    event.status = status
     db.commit()
     db.refresh(event)
     return event

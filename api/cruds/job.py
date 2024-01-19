@@ -174,7 +174,7 @@ def get_jobs(
     db: Session,
     status: Literal["all", "active", "inactive", "draft", "posted"] = "all",
     keyword: str = "",
-    sort: str = "new",
+    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
@@ -207,6 +207,10 @@ def get_jobs(
             )
         elif target == "posted":
             stmt = stmt.filter(models.Job.user_id == user_id)
+        elif target == "apply":
+            stmt = stmt.join(models.Application).filter(
+                models.Application.user_id == user_id
+            )
     if tag_name:
         stmt = stmt.filter(models.Job.tags.any(models.Tag.name == tag_name))
     if sort == "id":
