@@ -40,7 +40,9 @@ class User(BaseModel):
         back_populates="author",
         cascade="all, delete-orphan",
     )
-    job_watched_link = relationship("JobWatched", back_populates="user")
+    job_watched_link = relationship(
+        "JobWatched", back_populates="user", cascade="all, delete-orphan"
+    )
 
     event_reviews = relationship(
         "EventReview", backref="user", cascade="all, delete-orphan"
@@ -53,7 +55,9 @@ class User(BaseModel):
     event_postings = relationship(
         "Event", back_populates="author", cascade="all, delete-orphan"
     )
-    event_watched_link = relationship("EventWatched", back_populates="user")
+    event_watched_link = relationship(
+        "EventWatched", back_populates="user", cascade="all, delete-orphan"
+    )
 
     applications = relationship(
         "Application", back_populates="user", cascade="all, delete-orphan"
