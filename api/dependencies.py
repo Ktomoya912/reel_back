@@ -37,7 +37,7 @@ def get_db(request: Request) -> Session:
 def common_parameters(
     db: Session = Depends(get_db),
     keyword: str = "",
-    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
+    sort: Literal["review", "favorite", "recent", "id", "pv", "last_watched"] = "id",
     order: str = "asc",
     offset: int = 0,
     limit: int = 100,

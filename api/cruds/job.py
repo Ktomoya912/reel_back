@@ -3,7 +3,7 @@ from typing import Literal
 
 from fastapi import HTTPException
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql import func, or_
+from sqlalchemy.sql import desc, func, or_
 
 import api.cruds.tag as tag_crud
 from api import models, schemas
@@ -174,7 +174,7 @@ def get_jobs(
     db: Session,
     status: Literal["all", "active", "inactive", "draft", "posted"] = "all",
     keyword: str = "",
-    sort: Literal["review", "favorite", "recent", "id", "pv"] = "id",
+    sort: Literal["review", "favorite", "recent", "id", "pv", "last_watched"] = "id",
     order: str = "desc",
     offset: int = 0,
     limit: int = 100,
@@ -221,6 +221,8 @@ def get_jobs(
         stmt = get_jobs_by_bookmark(stmt, target)
     elif sort == "pv":
         stmt = get_jobs_by_pv(stmt, target)
+    elif sort == "last_watched":
+        stmt = get_jobs_by_last_watched(stmt, target)
     else:
         stmt = get_jobs_by_recent(stmt)
     return stmt.offset(offset).limit(limit).all()
@@ -235,9 +237,17 @@ def get_jobs_by_review(query):
     )
 
 
+def get_jobs_by_last_watched(query, target):
+    if target == "history":
+        return query.order_by(models.JobWatched.updated_at.desc())
+    return query.join(models.JobWatched).order_by(desc(models.JobWatched.updated_at))
+
+
 def get_jobs_by_pv(query, target):
-    if "watched" == target:
-        return query.order_by(func.count(models.JobWatched.user_id).desc())
+    if target == "history":
+        return query.order_by(func.count(models.JobWatched.user_id).desc()).group_by(
+            models.Job.id
+        )
     return (
         query.outerjoin(models.JobWatched)
         .order_by(func.sum(models.JobWatched.count).desc())
