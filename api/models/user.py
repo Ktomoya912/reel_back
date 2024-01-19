@@ -41,8 +41,7 @@ class User(BaseModel):
         back_populates="author",
     )
     job_watched_link = relationship(
-        "JobWatched",
-        back_populates="user",
+        "JobWatched", back_populates="user", cascade="all, delete-orphan"
     )
 
     event_reviews = relationship(
@@ -54,13 +53,9 @@ class User(BaseModel):
         secondary="event_bookmarks",
         back_populates="bookmark_users",
     )
-    event_postings = relationship(
-        "Event",
-        back_populates="author",
-    )
+    event_postings = relationship("Event", back_populates="author")
     event_watched_link = relationship(
-        "EventWatched",
-        back_populates="user",
+        "EventWatched", back_populates="user", cascade="all, delete-orphan"
     )
 
     applications = relationship(
