@@ -28,8 +28,7 @@ class User(BaseModel):
     company = relationship("Company", backref="user", uselist=False)
 
     job_reviews = relationship(
-        "JobReview",
-        backref="user",
+        "JobReview", backref="user", cascade="all, delete-orphan"
     )
     job_bookmarks = relationship(
         "Job",
@@ -39,34 +38,30 @@ class User(BaseModel):
     job_postings = relationship(
         "Job",
         back_populates="author",
+        cascade="all, delete-orphan",
     )
-    job_watched_link = relationship(
-        "JobWatched", back_populates="user", cascade="all, delete-orphan"
-    )
+    job_watched_link = relationship("JobWatched", back_populates="user")
 
     event_reviews = relationship(
-        "EventReview",
-        backref="user",
+        "EventReview", backref="user", cascade="all, delete-orphan"
     )
     event_bookmarks = relationship(
         "Event",
         secondary="event_bookmarks",
         back_populates="bookmark_users",
     )
-    event_postings = relationship("Event", back_populates="author")
-    event_watched_link = relationship(
-        "EventWatched", back_populates="user", cascade="all, delete-orphan"
+    event_postings = relationship(
+        "Event", back_populates="author", cascade="all, delete-orphan"
     )
+    event_watched_link = relationship("EventWatched", back_populates="user")
 
     applications = relationship(
-        "Application",
-        back_populates="user",
+        "Application", back_populates="user", cascade="all, delete-orphan"
     )
     messages = relationship(
         "MessageBox",
         back_populates="user",
     )
     purchases = relationship(
-        "Purchase",
-        back_populates="user",
+        "Purchase", back_populates="user", cascade="all, delete-orphan"
     )

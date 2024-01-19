@@ -68,7 +68,7 @@ class Job(BaseModel):
     additional_message = Column(Text)
     image_url = Column(String(255))
     status = Column(String(10), default="draft")
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     purchase_id = Column(Integer, ForeignKey("purchases.id"))
 
     author = relationship("User", back_populates="job_postings")

@@ -177,6 +177,6 @@ class Event(EventListView):
         description="レビュー平均ポイント",
     )
     # period: datetime = Field(..., example="2023-12-31 23:59:59", description="掲載終了日時")
-    reviews: Optional[List[EventReview]]
+    reviews: Optional[List[EventReview]] = None
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
     author: user_schema.User

@@ -93,6 +93,7 @@ def get_event(
     """
     event = event_crud.watch_event(db, event_id, current_user.id)
     setattr(event, "is_favorite", event in current_user.event_bookmarks)
+    # assert event is None, event.reviews
     return event
 
 

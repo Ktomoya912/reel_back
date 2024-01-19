@@ -203,3 +203,36 @@ class TestJob:
         )
         assert response.status_code == 200, response.text
         assert len(response.json()) == 6
+
+    def test_create_user_and_review(self, general_client: TestClient, api_path: str):
+        response = general_client.post(
+            f"{api_path}/users/",
+            json={
+                "username": "username",
+                "password": "password",
+                "email": "email@example.com",
+                "sex": "o",
+                "birthday": "2021-01-01",
+            },
+        )
+        assert response.status_code == 200, response.text
+        response = general_client.post(
+            f"{api_path}/auth/token",
+            data={"username": "username", "password": "password"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        assert response.status_code == 200, response.text
+        response_json = response.json()
+        token = response_json["access_token"]
+        response = general_client.post(
+            f"{api_path}/jobs/1/review",
+            json={"title": "タイトル", "review": "レビュー", "review_point": 5},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200, response.text
+
+    def test_delete_user_and_detail(self, admin_client: TestClient, api_path: str):
+        response = admin_client.delete(f"{api_path}/users/2")
+        assert response.status_code == 200, response.text
+        response = admin_client.get(f"{api_path}/jobs/1")
+        assert response.json() != {}, response.json()
