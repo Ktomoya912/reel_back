@@ -121,6 +121,8 @@ def get_events(
     offset: int = 0,
     limit: int = 100,
     tag="",
+    user_id: int = None,
+    target: Literal["favorite", "history", "posted", "apply"] = None,
 ):
     query = db.query(models.Event)
     if type != "all":
@@ -129,12 +131,11 @@ def get_events(
         query = query.filter(
             or_(
                 models.Event.name.contains(keyword),
-                models.Event.description.contains(keyword),
                 models.Event.tags.any(models.Tag.name.contains(keyword)),
             )
         )
     if tag:
-        query = query.filter(models.Event.tags.any(models.Tag.id == tag))
+        query = query.filter(models.Event.tags.any(models.Tag.name == tag))
     if sort == "id":
         query = get_events_by_id(query)
     elif sort == "review":
