@@ -2,7 +2,15 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Form,
+    HTTPException,
+    Request,
+    status,
+)
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
@@ -101,6 +109,15 @@ def email_confirmation(
     """
     try:
         user = get_current_user(settings=settings, db=db, token=token)
+        if user.is_active:
+            return templates.TemplateResponse(
+                "error.html",
+                context={
+                    "request": request,
+                    "error_code": 400,
+                    "error_message": "既にメール認証が完了しています。",
+                },
+            )
         user.is_active = True
         db.commit()
         db.refresh(user)
@@ -141,6 +158,9 @@ def forgot_password(
         data={"sub": user.username},
         expires_delta=timedelta(minutes=15),
     )
+    user.is_active = False
+    db.commit()
+    db.refresh(user)
     html_file = Path(__file__).parent.parent / "templates" / "MAIL-reset-password.html"
     html = Template(html_file.read_text())
     background_tasks.add_task(
@@ -170,7 +190,16 @@ def reset_password_form(
     ただし、トークンが有効でない場合は、エラーが返される。
     """
     try:
-        get_current_user(settings=settings, db=db, token=token)
+        user = get_current_user(settings=settings, db=db, token=token)
+        if user.is_active:
+            return templates.TemplateResponse(
+                "error.html",
+                context={
+                    "request": request,
+                    "error_code": status.HTTP_400_BAD_REQUEST,
+                    "error_message": "既にパスワードのリセットが完了しているか、不正なアクセスです。",
+                },
+            )
     except HTTPException:
         return templates.TemplateResponse(
             "error.html",
@@ -221,6 +250,9 @@ def reset_password(
                 "error_message": "URLが不正です。再度、パスワードリセットのメールを送信してください。",
             },
         )
+    user.is_active = True
+    db.commit()
+    db.refresh(user)
     return templates.TemplateResponse(
         "result.html",
         context={

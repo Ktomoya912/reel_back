@@ -66,7 +66,7 @@ def get_db() -> Session:
 
 
 def make_admin_user():
-    from api.models import user
+    from api.models import user, company
 
     if os.getenv("ADMIN_PASSWORD") is None:
         raise NoEnvironmentError("ADMIN_PASSWORD")
@@ -82,6 +82,17 @@ def make_admin_user():
         birthday=date(2000, 1, 1),
         user_type="a",
         is_active=True,
+        company=company.Company(
+            name="reel",
+            postal_code="782-8502",
+            prefecture="高知県",
+            city="香美市",
+            address="土佐山田町土佐山田",
+            phone_number="0887-53-1111",
+            email="kochi-university@kochi-tech.ac.jp",
+            homepage="https://www.kochi-tech.ac.jp/",
+            representative="高知工科大学長",
+        ),
     )
     db.add(admin_user)
     try:
