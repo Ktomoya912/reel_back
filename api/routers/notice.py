@@ -16,8 +16,9 @@ def get_notifications(
 ):
     """
     既読でない通知を取得する。
-    index 0: イベント通知
-    index 1: 求人通知
+
+    - index 0: イベント通知
+    - index 1: 求人通知
     """
     job_messages = message_crud.get_messages(db, current_user.id, "J")
     event_messages = message_crud.get_messages(db, current_user.id, "E")

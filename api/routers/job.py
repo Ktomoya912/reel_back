@@ -189,8 +189,8 @@ def apply_job(
     message = message_crud.create_message(
         db,
         schemas.MessageCreate(
-            title="応募がありました",
-            message=f"{current_user.username}さんが応募しました。",
+            title=f"[求人]「{response_data.job.name}」に応募が来ました。",
+            message=f"「{current_user.username}」さんが「{response_data.job.name}」の求人に応募しました。",
             type="J",
             user_list=[response_data.job.author.id],
         ),
@@ -236,8 +236,8 @@ def approve_application(
     message = message_crud.create_message(
         db,
         schemas.MessageCreate(
-            title="応募が承認されました",
-            message=f"{response_data.job.author.username}さんが応募を承認しました。",
+            title=f"[求人]「{response_data.job.name}」への応募が承認されました。",
+            message=f"「{response_data.job.author.username}」さんがあなたの「{response_data.job.name}」への応募を承認しました。",
             type="J",
             user_list=[user_id],
         ),
@@ -264,8 +264,8 @@ def reject_application(
     message = message_crud.create_message(
         db,
         schemas.MessageCreate(
-            title="応募が拒否されました",
-            message=f"{response_data.job.author.username}さんが応募を拒否しました。",
+            title=f"[求人]「{response_data.job.name}」への応募が拒否されました。",
+            message=f"「{response_data.job.author.username}」さんがあなたの「{response_data.job.name}」への応募を拒否しました。",
             type="J",
             user_list=[user_id],
         ),
