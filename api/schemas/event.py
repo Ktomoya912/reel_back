@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 import api.schemas.tag as tag_schema
+import api.schemas.plan as plan_schema
 import api.schemas.user as user_schema
 from api.utils import get_jst_now
 
@@ -180,3 +181,4 @@ class Event(EventListView):
     reviews: Optional[List[EventReview]] = None
     is_favorite: bool = Field(..., example=True, description="お気に入り登録済みかどうか")
     author: user_schema.User
+    purchase: Optional[plan_schema.Purchase]
