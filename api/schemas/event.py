@@ -3,8 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
-import api.schemas.tag as tag_schema
 import api.schemas.plan as plan_schema
+import api.schemas.tag as tag_schema
 import api.schemas.user as user_schema
 from api.utils import get_jst_now
 
@@ -35,7 +35,7 @@ class EventReviewBase(BaseModel):
         example="タイトル",
         description="タイトル",
         min_length=1,
-        max_length=20,
+        max_length=50,
     )
     review: str = Field(
         ...,
