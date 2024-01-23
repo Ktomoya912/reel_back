@@ -22,7 +22,7 @@ DB_URL = (
     f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/demo?charset=utf8"
 )
 
-engine = create_engine(DB_URL, echo=True)
+engine = create_engine(DB_URL, echo=False)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -66,7 +66,7 @@ def get_db() -> Session:
 
 
 def make_admin_user():
-    from api.models import user, company
+    from api.models import company, user
 
     if os.getenv("ADMIN_PASSWORD") is None:
         raise NoEnvironmentError("ADMIN_PASSWORD")
