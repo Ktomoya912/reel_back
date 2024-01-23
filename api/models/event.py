@@ -98,7 +98,7 @@ class Event(BaseModel):
     watched_user_link = relationship(
         "EventWatched", back_populates="event", cascade="all, delete-orphan"
     )
-    purchase = relationship("Purchase", backref="event")
+    purchase = relationship("Purchase", back_populates="event", uselist=False)
 
     @property
     def is_active(self):

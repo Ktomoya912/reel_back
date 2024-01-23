@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from pathlib import Path
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from jinja2 import Template
 from sqlalchemy.orm.session import Session
 
+import api.cruds.message as message_crud
 import api.cruds.plan as plan_crud
-from api import models, schemas
-from api.dependencies import get_admin_user, get_company_user, get_db
+from api import config, models, schemas
+from api.dependencies import get_admin_user, get_company_user, get_config, get_db
+from api.utils import send_email
 
 router = APIRouter(prefix="/plans", tags=["プラン"])
 
@@ -121,11 +126,43 @@ def get_no_paid_users(
     return plan_crud.get_no_paid_users(db)
 
 
-@router.post("/paid-checked/{purchase_id}", response_model=bool, summary="支払い確認")
+@router.post(
+    "/paid-checked/{purchase_id}", response_model=schemas.Purchase, summary="支払い確認"
+)
 def paid_checked(
     purchase_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    settings: config.BaseConfig = Depends(get_config),
     current_user: models.User = Depends(get_admin_user),
 ):
     """管理者が支払い確認をした後、支払い済みにする。"""
-    return plan_crud.paid_checked(db, purchase_id)
+    purchase = plan_crud.paid_checked(db, purchase_id)
+    if not purchase:
+        raise HTTPException(status_code=400, detail="purchase is already checked")
+    html_file = Path(__file__).parent.parent / "templates" / "MAIL-paid-check.html"
+    html = Template(html_file.read_text()).render(
+        plan_name=purchase.plan.name,
+        plan_price=purchase.plan.price,
+        plan_amount=purchase.contract_amount,
+    )
+    type = purchase.job if purchase.job else purchase.event
+    type_s = "J" if type == purchase.job else "E"
+    message = message_crud.create_message(
+        db,
+        schemas.MessageCreate(
+            title=f"「{type.name}」が有効化されました。",
+            message=f"あなたが購入した、「{purchase.plan.name}」プランの「{type.name}」が有効化されました。",
+            type=type_s,
+            user_list=[purchase.user.id],
+        ),
+    )
+    message_crud.send_message(db, [purchase.user.id], message.id)
+    background_tasks.add_task(
+        send_email,
+        from_=settings.MAIL_SENDER,
+        to=purchase.user.email,
+        subject="支払い確認完了のお知らせ",
+        body=html,
+    )
+    return purchase

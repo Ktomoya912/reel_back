@@ -97,7 +97,7 @@ class Job(BaseModel):
     watched_user_link = relationship(
         "JobWatched", back_populates="job", cascade="all, delete-orphan"
     )
-    purchase = relationship("Purchase", backref="job")
+    purchase = relationship("Purchase", back_populates="job", uselist=False)
 
     @property
     def is_active(self):
