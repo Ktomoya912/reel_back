@@ -22,17 +22,6 @@ def get_plans(
     return plan_crud.get_plans(db)
 
 
-@router.get("/{plan_id}", response_model=schemas.Plan, tags=["プラン"])
-def get_plan(plan_id: int, db: Session = Depends(get_db)):
-    """
-    プランの詳細を取得する。
-    """
-    plan = plan_crud.get_plan(db, plan_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan not found")
-    return plan
-
-
 @router.post("/", response_model=schemas.Plan, summary="プラン作成")
 def create_plan(
     plan_create: schemas.PlanCreate,
@@ -166,3 +155,14 @@ def paid_checked(
         body=html,
     )
     return purchase
+
+
+@router.get("/{plan_id}", response_model=schemas.Plan, tags=["プラン"])
+def get_plan(plan_id: int, db: Session = Depends(get_db)):
+    """
+    プランの詳細を取得する。
+    """
+    plan = plan_crud.get_plan(db, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
