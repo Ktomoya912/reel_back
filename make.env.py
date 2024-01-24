@@ -9,8 +9,8 @@ aws_secret_access_key = re.sub(r"aws_secret_access_key=", "", raw_aws_secret_acc
 aws_session_token = re.sub(r"aws_session_token=", "", raw_aws_session_token)
 
 result = f"""
--e aws_access_key_id="{aws_access_key_id}" \\
--e aws_secret_access_key="{aws_secret_access_key}" \\
--e aws_session_token="{aws_session_token}" \\
+-e AWS_ACCESS_KEY_ID="{aws_access_key_id}" \\
+-e AWS_SECRET_ACCESS_KEY="{aws_secret_access_key}" \\
+-e AWS_SESSION_TOKEN="{aws_session_token}" \\
 """
 print(result)

@@ -72,7 +72,7 @@ class EventBase(BaseModel):
         ...,
         example="イベント名",
         description="イベント名",
-        min_length=5,
+        min_length=1,
         max_length=100,
     )
     image_url: Optional[str] = Field(
