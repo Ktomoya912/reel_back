@@ -109,35 +109,35 @@ class EventCreate(EventBase):
         max_length=100,
     )
     phone_number: str = Field(
-        ...,
+        None,
         example="0887-53-1111",
         description="電話番号",
         min_length=10,
         max_length=13,
     )
     email: EmailStr = Field(
-        ...,
+        None,
         example="sample@ugs.ac.jp",
         description="メールアドレス",
         max_length=100,
     )
     homepage: Optional[str] = Field(
-        ...,
+        None,
         example="https://kochi-tech.ac.jp/",
         description="ホームページ",
     )
-    participation_fee: str = Field(
-        ...,
+    participation_fee: Optional[str] = Field(
+        None,
         example="無料",
         description="参加費",
     )
-    capacity: int = Field(
-        ...,
+    capacity: Optional[int] = Field(
+        None,
         example=100,
         description="定員",
     )
-    additional_message: str = Field(
-        ...,
+    additional_message: Optional[str] = Field(
+        None,
         example="",
         description="追加メッセージ",
         max_length=1000,
@@ -148,8 +148,8 @@ class EventCreate(EventBase):
         description="説明",
         max_length=1000,
     )
-    caution: str = Field(
-        ...,
+    caution: Optional[str] = Field(
+        None,
         example="",
         description="注意事項",
         max_length=1000,

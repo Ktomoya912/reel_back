@@ -123,8 +123,8 @@ class JobCreate(JobBase):
         example=True,
         description="1日のみ",
     )
-    additional_message: str = Field(
-        ...,
+    additional_message: Optional[str] = Field(
+        None,
         example="追加メッセージ",
         description="追加メッセージ",
         min_length=1,
