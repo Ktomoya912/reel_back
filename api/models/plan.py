@@ -25,6 +25,8 @@ class Purchase(BaseModel):
 
     user = relationship("User", back_populates="purchases", uselist=False)
     plan = relationship("Plan", back_populates="users", uselist=False)
+    event = relationship("Event", back_populates="purchase", uselist=False)
+    job = relationship("Job", back_populates="purchase", uselist=False)
 
     @property
     def contract_days(self) -> timedelta:

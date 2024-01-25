@@ -99,11 +99,17 @@ def get_no_paid_users(db: Session) -> list[models.User]:
     return [purchase.user for purchase in purchases]
 
 
-def paid_checked(db: Session, purchase_id: int) -> Literal[True]:
+def paid_checked(db: Session, purchase_id: int) -> models.Purchase:
     purchase = db.query(models.Purchase).get(purchase_id)
     if purchase is None:
         return False
+    if purchase.is_paid:
+        return False
     purchase.is_paid = True
+    if purchase.job is not None:
+        purchase.job.status = "active"
+    if purchase.event is not None:
+        purchase.event.status = "active"
     db.commit()
     db.refresh(purchase)
-    return True
+    return purchase

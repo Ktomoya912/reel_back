@@ -72,7 +72,7 @@ class EventBase(BaseModel):
         ...,
         example="イベント名",
         description="イベント名",
-        min_length=5,
+        min_length=1,
         max_length=100,
     )
     image_url: Optional[str] = Field(
@@ -115,7 +115,7 @@ class EventCreate(EventBase):
         min_length=10,
         max_length=13,
     )
-    email: EmailStr = Field(
+    email: Optional[EmailStr] = Field(
         None,
         example="sample@ugs.ac.jp",
         description="メールアドレス",

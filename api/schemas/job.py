@@ -68,7 +68,13 @@ class JobReview(JobReviewBase):
 
 
 class JobBase(BaseModel):
-    name: str
+    name: str = Field(
+        ...,
+        example="求人名",
+        description="求人名",
+        min_length=1,
+        max_length=100,
+    )
     image_url: Optional[str] = Field(
         None,
         example="https://example.com",
