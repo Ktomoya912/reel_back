@@ -115,6 +115,34 @@ def get_no_paid_users(
     return plan_crud.get_no_paid_users(db)
 
 
+@router.get(
+    "/all-no-paid",
+    response_model=list[schemas.Purchase],
+    summary="すべての未払いプラン",
+    tags=["管理者"],
+)
+def get_all_no_paid_plans(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_admin_user),
+):
+    """管理者ユーザーが未払いのプランを取得する。"""
+    return plan_crud.get_all_no_paid_plans(db)
+
+
+@router.post(
+    "/all-paid-check",
+    response_model=list[schemas.Purchase],
+    summary="すべての支払い確認",
+    tags=["管理者"],
+)
+def all_paid_check(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_admin_user),
+):
+    """管理者ユーザーが未払いのプランすべて、支払い済みにする。"""
+    return plan_crud.all_paid_check(db)
+
+
 @router.post(
     "/paid-checked/{purchase_id}", response_model=schemas.Purchase, summary="支払い確認"
 )

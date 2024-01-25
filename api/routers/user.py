@@ -191,6 +191,23 @@ def get_user_me(
     return current_user
 
 
+@router.put(
+    "/all-user-activate",
+    summary="ユーザー有効化",
+    tags=["管理者"],
+    response_model=list[schemas.User],
+)
+def activate_all_user(
+    db: Session = Depends(get_db),
+):
+    users = user_crud.get_users(db)
+    for user in users:
+        user.is_active = True
+        db.commit()
+        db.refresh(user)
+    return users
+
+
 @router.get("/{user_id}", response_model=schemas.User, summary="ユーザー情報")
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """ユーザーIDを指定して、ユーザー情報を取得する。"""

@@ -92,11 +92,37 @@ def get_no_paid_plans(db: Session, user_id: int) -> list[models.Purchase]:
     return purchases
 
 
+def get_all_no_paid_plans(db: Session) -> list[models.Purchase]:
+    purchases = (
+        db.query(models.Purchase)
+        .filter(
+            models.Purchase.is_paid == False,  # noqa
+        )
+        .all()
+    )
+    return purchases
+
+
 def get_no_paid_users(db: Session) -> list[models.User]:
     purchases = (
         db.query(models.Purchase).filter(models.Purchase.is_paid == False).all()  # noqa
     )
     return [purchase.user for purchase in purchases]
+
+
+def all_paid_check(db: Session) -> list[models.Purchase]:
+    purchases = (
+        db.query(models.Purchase).filter(models.Purchase.is_paid == False).all()  # noqa
+    )
+    for purchase in purchases:
+        purchase.is_paid = True
+        if purchase.job is not None:
+            purchase.job.status = "active"
+        if purchase.event is not None:
+            purchase.event.status = "active"
+        db.commit()
+        db.refresh(purchase)
+    return purchases
 
 
 def paid_checked(db: Session, purchase_id: int) -> models.Purchase:
